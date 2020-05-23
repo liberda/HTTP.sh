@@ -1,0 +1,46 @@
+#!/bin/bash
+domainprefix='https://megumin.tech/boards'
+
+id=${get_data[id]}
+if [[ $id == '' ]]; then
+	return 1
+elif [[ $id == *".."* ]]; then
+	return 1
+fi
+
+meta[css]='style.css'
+meta[title]="Thread #$id"
+source templates/head.sh
+
+echo "<body>
+<div class='center'>
+	<a href='./'><img id='branding' src='/img/branding_chinacat.png'><br>
+	bashchan</a> - a place for all your shitposts
+</div>
+"
+
+IFS=$'\n'
+for i in $(cat storage/threads/$id); do
+	IFS=':'
+	array=($i)
+	echo "<div class='post'>"
+	if [[ ${array[1]} != '' ]]; then
+		echo "<span class='thread_title'>${array[1]}</span> | "
+	fi
+	echo "<span class='poster'>${array[0]}</span><br>"
+	if [[ -a "$pwd/i/${array[3]}" ]]; then
+		echo "<a href='$domainprefix/i/${array[3]}'><img src='$domainprefix/i/${array[3]}' class='pic'></a>"
+	fi
+	echo "${array[2]}</div>"
+done
+
+
+echo "<form enctype='multipart/form-data' action='post.shs' method='post' id='post'>
+		<input type='hidden' name='rel' value='$id'>
+		<input type='hidden' name='a' value='broken'>
+		<input type='text' name='title' class='title' placeholder='Title'><br>
+		<textarea name='msg' class='msg' placeholder='Message'></textarea><br>
+		<input type='file' name='file' class='file' accept='image/*'>
+		<input type='submit' value='Submit' class='submit'>
+	</form>
+"

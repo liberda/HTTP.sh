@@ -1,0 +1,68 @@
+#!/bin/bash
+cat webroot/allegro/listing_top.txt
+
+query="$(echo "${get_data[q]}" | sed -s "s/ /%20/g;s/+/%20/g")"
+query_nice=$(echo ${get_data[q]} | sed -s "s/+/ /g;")
+[[ ${get_data[order]} ]] && order=${get_data[order]} || order='p'
+
+echo "Searching for '$query_nice'"
+
+IFS=$'\n'
+data=$(curl "https://allegro.pl/listing?string=$query&order=$order" | sed -E 's/<\/article>/\n/g' | grep -ohE "allegro.pl/oferta(.*)")
+
+cost=($(echo "$data" | grep -Eoh "span class=\"[A-Za-z0-9_]{12}\">([0-9]+|[0-9]+ [0-9]+)<span>,<\/span><span class=\"[A-Za-z0-9_]{12}\">[0-9]+" | sed -E 's/span class=\"[A-Za-z0-9_]{12}\">//g;s/<span>//g;s/<\/span><//g'))
+img=($(echo "${data}" | sed -E 's/\" [a-z]{3,5}\="/\n/g;s/,/\n/g;s/ [0-9]+w//g;s/"  \/>//g' | grep -ohE "[a-z0-9].allegroimg.com/s[0-9]+/[a-z0-9]{6}/[a-z0-9]{28}/(.*)"))
+name=($(echo "${data}" | sed -E 's/<\/a>/\n/g' | grep -ohE 'title="">(.*)' | sed -s 's/title="">//g'))
+links=($(echo "${data}" | sed -E 's/"(.*)//g'))
+
+for (( i=0; i<${#img[@]}; i++ )) do
+	#echo "<div><a href='https://${links[$i]}'><img src='https://${img[$i]}'>${cost[$i]}PLN<br><b>${name[$i]}</b></a></div>"
+
+	echo "
+	<!-- ITEM BEGIN -->
+	<tr>
+	 <td class='cellPhoto'>
+	 <a href='${links[$i]}' class='iImg' title='${name[$i]}'><img src='https://${img[$i]}'></a>
+	 </td>
+	 
+	   
+	  <td class='cellName'>
+	 <div>
+	   <a href='https://${links[$i]}' class='alleLink iTitle'>
+	 <span>${name[$i]}</span>
+	 </a>
+	  <span class='listingParams'>
+	    </span>
+	 <span>
+	         
+	                    </span>
+	 </div>
+	 </td>
+	 
+	  <td class='cellPrice'>
+	    <span class='iPriceBN'><span>Kup Teraz!</span> ${cost[$i]} zł</span>
+	   </td>
+	 	 
+	  <td class='cellTrans'>
+	   <div>
+	 <span class='iPriceBND'>
+	  <span>z dostawą:</span>
+	 <span class='listingPostagePrice'>??? zł</span>
+	   </span>
+	 </div>
+	    </td>
+	    
+	  <td class='cellOffer'>
+	 <span class='iOffer'><span>Popularność:</span> ???</span> </td>
+	 
+	  <td class='cellTime alert'>
+	 <span class='iTime'><span>Do końca:</span> <font color='#ff0000'>???</font></span>
+	 </td>
+	   </tr>
+	<!-- ITEM END -->
+	"
+
+	
+done
+
+cat webroot/allegro/listing_bottom.txt

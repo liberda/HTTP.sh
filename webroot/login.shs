@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [[ ${post_data[login]} != '' && ${post_data[password]} != '' ]]; then
+	login ${post_data[login]} ${post_data[password]}
+	status=$?
+	if [[ $status == 0 ]]; then
+		echo ${get_data[r]} > /dev/stderr
+		if [[ ${get_data[r]} == '' ]]; then
+			meta[redirect]='/'
+		else
+			meta[redirect]="$(echo ${get_data[r]} | sed -s 's/<//g;s/___/?/')"
+		fi
+	fi
+fi
+
+source templates/head.sh
+
+if [[ $status == 1 && $reason != '' ]]; then
+	echo $reason
+fi
+
+echo "<h1>Log in...</h1>
+<form method='post'>
+<label for='login'>Login:</label>
+<input type='text' name='login'><br>
+<label for='password'>Password:</label>
+<input type='password' name='password'><br>
+<input type='submit' value='Login'>
+</form>
+(please make sure that you're connecting over SSL)"

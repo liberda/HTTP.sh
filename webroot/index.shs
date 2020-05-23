@@ -1,0 +1,65 @@
+#!/bin/bash
+
+meta[title]='HTTP.sh'
+meta[author]='Dominika, Laura, Patrycja'
+meta[description]='HTTP.sh - a quick and dirty webserver, written in Bash'
+meta[keywords]='bash,http,web,server,http.sh'
+meta[lang]='en'
+
+source templates/head.sh
+
+echo "<body>
+<style>
+h1,h2,h3 {
+	color: #fff
+}
+.lr {
+	position: absolute;
+	right: 5px;
+}
+</style>"
+if [[ ! ${cookies[sh_session]} ]]; then
+	echo "<div class='lr'><a href='login.shs'>Log in</a> or <a href='register.shs'>Register</a></div>"
+else
+	echo "<div class='lr'>Logged in as ${cookies[username]}| <a href='logout.shs'>Log out</a></div>"
+fi
+echo "<img src='img/branding_pxplus.png'>
+<h2>HTTP.sh - a quick and dirty webserver, written in Bash</h2>
+
+<p>
+Although we've seen several attempts to create a Bash web framework, all of them fell flat one way or another.<br>
+We've decided to change that. Did we succeed? You be the judge!
+</p>
+
+<h3>Download</h3>
+<p>
+This web server was tested as much as the time allowed, but we can't say for certain that it's bug free.<br>
+If you want to check out our (dirty) code, download the current <a href='http://f.sakamoto.pl/httpsh.tar.xz'>tarball</a>.<br><br>
+We also can't guarantee that HTTP.sh is <a href='https://xkcd.com/641/'>asbestos free</a>, so <b>proceed with caution.</b>
+</p>
+
+<h3>Dependencies</h3>
+<ol>
+	<li>Bash or 100% compatible shell</li>
+	<li><a href='http://nmap.org/ncat'>Ncat</a> - nc/nc.traditional WILL NOT work</li>
+	<li>GNU coreutils (dd, base64 and others)</li>
+	<li>pkill</li>
+	<li>mktemp</li>
+	<li>sha1sum, sha256sum</li>
+	<li>curl (only for a few demos)</li>
+	<li>certbot (only if you'd like to get a SSL cert)
+</ol>
+
+<h3>Demos</h3>
+<ol>
+	<li><a href='boards/'>bashchan</a> (an imageboard)</li>
+	<li><a href='pastebin/'>bashbin</a> (a pastebin)</li>
+	<li><a href='yt/'>bashtube</a> (a YouTube frontend)</li>
+	<li><a href='shortener/'>bashurl</a> (a URL shortener)</li>
+	<li><a href='upload/'>bashupload</a> (a file uploader)</li>
+	<li><a href='allegro/'>bashallgero</a> (a frontend for a Polish auction site)</li>
+	<li><a href='img/'>listing</a> (just a file listing, but it looks mighty cool)</li>
+</ol>
+
+<hr>
+Made by <a href='https://sakamoto.pl/' id='reds'>reds</a>, <a href='https://selfisekai.rocks/' style='color:#d60270;'>selfisekai</a> and <a href='https://ptrcnull.me/' style='color:#ffb9d3'>ptrcnull</a>. IF YOU LOG IN, THIS SITE WILL STORE COOKIES ON YOUR PERSONAL COMPUTING DEVICE"

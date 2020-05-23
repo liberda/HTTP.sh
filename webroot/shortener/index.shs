@@ -1,0 +1,35 @@
+#!/bin/bash
+domainprefix="https://url.megumin.tech/"
+not_found=false
+
+if [[ ${get_data[u]} ]]; then
+    id=${get_data[u]}
+    if [[ -f storage/shortener/$id ]]; then
+        meta[redirect]=$(cat storage/shortener/$id)
+    else
+        not_found=true
+    fi
+fi
+
+meta[title]="url shortener i guess"
+source templates/head.sh
+
+if [[ $not_found == "true" ]]; then
+    echo "<h1>ID not found</h1>"
+else
+    if [[ ${post_data[url]} ]]; then
+        if [[ ! -d storage/shortener ]]; then
+            mkdir storage/shortener
+        fi
+        id=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-8)
+        link=$(printf $(sed 's/%/\\x/g' <<< ${post_data[url]}))
+        echo -n $link > storage/shortener/$id
+        echo "<p>URL created: <a href='$domainprefix?u=$id'>link</a></p>"
+    else
+        echo '<h1>Revolutionary URL shortener</h1>
+    <form method="POST">
+        <input type="text" name="url" placeholder="URL">
+        <button type="submit">Submit</button>
+    </form>';
+    fi
+fi

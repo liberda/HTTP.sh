@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if session_verify ${cookies[sh_session]} && [[ ${get_data[v]} != '' ]]; then
+	title=$(youtube-dl -e "https://youtube.com/watch?v=${get_data[v]}")
+	if [[ $(cat storage/faves | grep -F "$title" | grep "$(echo ${cookies[username]} | sed -E "s/\r//")") == '' ]]; then
+		echo "$(session_get_username ${cookies[sh_session]}):${get_data[v]}:$title" >> storage/faves
+	fi
+fi
+
+source templates/head.sh
+
+echo "<a href='./'>&lt;--- back to main</a><br><h1>Your favourites</h1>"
+
+IFS=$'\n'
+for i in $(tac storage/faves); do
+	IFS=':'
+	array=($i)
+	echo "<div><a href='watch.shs?v=${array[1]}'><img src='https://i.ytimg.com/vi/${array[1]}/mqdefault.jpg'><br><b>${array[@]:2:999}</b></a><br></div>";
+done
