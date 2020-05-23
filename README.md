@@ -5,7 +5,7 @@ Launch with `./http.sh`. Does not need root priviliges ~~- in fact, DO NOT run i
 
 To prevent running malicious scripts, by default only scripts with extension `.shs` can be run by the server, but this can be changed in the config. Also, cfg[index] ignores this. SHS stands for Shell Server.
 
-Originally made for Junction Stupidhack 2020; Created by [redsPL](@redsPL), [selfisekai](@selfisekai) and [ptrcnull](@ptrcnull).
+Originally made for Junction Stupidhack 2020; Created by [redsPL](https://sakamoto.pl/), [selfisekai](https://selfisekai.rocks/) and [ptrcnull](https://ptrcnull.me/).
 
 ## Dependencies
 
