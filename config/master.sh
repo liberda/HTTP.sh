@@ -18,3 +18,6 @@ cfg[extension]='shs'
 cfg[extra_headers]='server: HTTP.sh/0.9'
 
 cfg[title]='ddd defies development'
+
+cfg[php_enabled]=true
+cfg[python_enabled]=true
