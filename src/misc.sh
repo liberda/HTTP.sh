@@ -17,3 +17,17 @@ function header() {
 		r[headers]+="$i\r\n"
 	done
 }
+
+# get_dump()
+function get_dump() {
+	for i in "${!get_data[@]}"; do
+		echo "${i}=${get_data[$i]}"
+	done
+}
+
+# post_dump()
+function post_dump() {
+	for i in "${!post_data[@]}"; do
+			echo "${i}=${post_data[$i]}"
+	done
+}
