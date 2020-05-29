@@ -5,14 +5,14 @@ get_mime ${r[uri]}
 
 if [[ ${cfg[php_enabled]} == true && ${r[uri]} =~ ".php" ]]; then
 	temp=$(mktemp)
-	php "${r[uri]}" > $temp
+	php "${r[uri]}" "$(get_dump)" "$(post_dump)" > $temp
 	[[ ${r[headers]} != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
 	cat $temp
 	rm $temp
 
 elif [[ ${cfg[python_enabled]} == true && ${r[uri]} =~ ".py" ]]; then
 	temp=$(mktemp)
-	python "${r[uri]}" > $temp
+	python "${r[uri]}" "$(get_dump)" "$(post_dump)" > $temp
 	[[ ${r[headers]} != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
 	cat $temp
 	rm $temp
