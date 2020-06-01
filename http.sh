@@ -11,14 +11,14 @@ echo "HTTP.sh"
 
 if [[ ${cfg[ssl]} == true ]]; then
 	echo "listening on port ${cfg[port]} (HTTP) and ${cfg[ssl_port]} (HTTPS)"
-	ncat -l -p ${cfg[port]} -c ./src/server.sh -k &
+	ncat -v -l -p ${cfg[port]} -c ./src/server.sh -k 2>> ${cfg[log_http]} &
 	if [[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]]; then
-		ncat -l -p ${cfg[ssl_port]} -c ./src/server.sh -k --ssl --ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}
+		ncat -v -l -p ${cfg[ssl_port]} -c ./src/server.sh -k --ssl --ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]} 2>> ${cfg[log_https]}
 	else
-		ncat -l -p ${cfg[ssl_port]} -c ./src/server.sh -k --ssl
+		ncat -v -l -p ${cfg[ssl_port]} -c ./src/server.sh -k --ssl 2>> ${cfg[log_https]}
 	fi
 else
 	echo "listening on port ${cfg[port]} (HTTP)"
-	ncat -l -p ${cfg[port]} -c ./src/server.sh -k
+	ncat -v -l -p ${cfg[port]} -c ./src/server.sh -k 2>> ${cfg[log_http]}
 fi
 

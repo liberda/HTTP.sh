@@ -86,12 +86,21 @@ done
 r[uri]=$(realpath ${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//'))
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
-# shitty logging
-echo "-------------" >> log
-echo $(date) >> log
-echo "URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> log
 
-echo ${r[uri]} > /dev/stderr
+echo "---" >> ${cfg[log_misc]}
+echo "$(date)" >> ${cfg[log_misc]}
+if [[ $(tail -n 1 ${cfg[log_http]}) == $(cat /tmp/lasthttp) ]]; then
+	r[ip]=$(tail -n 1 ${cfg[log_https]} | sed -s 's/Ncat: Connection from //')
+	r[proto]='http'
+	echo "HTTPS IP: ${r[ip]}" >> ${cfg[log_misc]}
+else
+	r[ip]=$(tail -n 1 ${cfg[log_http]} | sed -s 's/Ncat: Connection from //')
+	r[proto]='https'
+	echo "HTTP IP: ${r[ip]}" >> ${cfg[log_misc]}
+fi
+echo "URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> ${cfg[log_misc]}
+tail -n 1 ${cfg[log_http]} > /tmp/lasthttp
+
 
 if [[ ${r[status]} != 101 ]]; then
 	if [[ -a ${r[uri]} && ! -r ${r[uri]} ]]; then
@@ -113,7 +122,7 @@ if [[ ${r[status]} != 101 ]]; then
 fi
 
 if [[ ${cfg[auth_required]} == true && ${r[authorized]} != true ]]; then
-	echo "Auth failed." >> log
+	echo "Auth failed." >> ${cfg[log_misc]}
 	r[status]=401
 fi
 

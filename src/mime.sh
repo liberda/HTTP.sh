@@ -15,7 +15,6 @@
 function get_mime() {
 	local file=$@
 	local mime=$(file --mime-type -b $file)
-	echo $file $mime > /dev/stderr
 	if [[ $file == *".htm" || $file == *".html" ]]; then
 		content_type="text/html"
 		return 0

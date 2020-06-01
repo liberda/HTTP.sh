@@ -23,7 +23,6 @@ function register() {
 # login(username, password) 
 function login() {
 	local username=$(echo -ne $(echo "$1" | sed -E 's/%/\\x/g'))
-	echo $1 $username > /dev/stderr
 	IFS=':'
 	local user=($(grep "$username:" secret/users.dat))
 	unset IFS
@@ -42,7 +41,6 @@ function login() {
 # login_simple(base64)
 function login_simple() {
 	local data=$(echo $3 | base64 -d)
-	echo $3 > /dev/stderr
 	local password=$(echo $data | sed -E 's/^(.*)\://')
 	local login=$(echo $data | sed -E 's/\:(.*)$//')
 	
@@ -51,7 +49,6 @@ function login_simple() {
 	unset IFS
 	if [[ $(echo -n $password${user[2]} | sha256sum | cut -c 1-64 ) == ${user[1]} ]]; then
 		r[authorized]=true
-		echo "nay" > /dev/stderr
 	else 
 		r[authorized]=false
 	fi
