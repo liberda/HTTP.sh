@@ -14,8 +14,8 @@ function register() {
 	local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
 	local hash=$(echo -n $2$salt | sha256sum | cut -c 1-64)
 	local token=$(dd if=/dev/urandom bs=32 count=1 | sha1sum | cut -c 1-40)
-	set_cookie "sh_session" $token
-	set_cookie "username" $username
+	set_cookie_permanent "sh_session" $token
+	set_cookie_permanent "username" $username
 	
 	echo "$username:$hash:$salt:$token" >> secret/users.dat
 }
@@ -27,8 +27,8 @@ function login() {
 	local user=($(grep "$username:" secret/users.dat))
 	unset IFS
 	if [[ $(echo -n $2${user[2]} | sha256sum | cut -c 1-64 ) == ${user[1]} ]]; then
-		set_cookie "sh_session" ${user[3]}
-		set_cookie "username" $username
+		set_cookie_permanent "sh_session" ${user[3]}
+		set_cookie_permanent "username" $username
 		return 0
 	else
 		remove_cookie "sh_session"

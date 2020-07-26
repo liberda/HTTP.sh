@@ -6,6 +6,11 @@ function set_cookie() {
 	r[headers]+="Set-Cookie: $1=$2\r\n"
 }
 
+# set_cookie_permanent(cookie_name, cookie_content)
+function set_cookie_permanent() {
+	r[headers]+="Set-Cookie: $1=$2; Expires=Mon, 26 Jul 2100 22:45:00 GMT\r\n"
+}
+
 # remove_cookie(cookie_name)
 function remove_cookie() {
 	r[headers]+="Set-Cookie: $1=; Expires=Sat, 02 Apr 2005 20:37:00 GMT\r\n"
