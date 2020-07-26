@@ -1,7 +1,0 @@
-#!/bin/bash
-
-logout
-meta[redirect]='/'
-source templates/head.sh
-
-echo "Logged out successully. Redirecting.."

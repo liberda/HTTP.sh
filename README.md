@@ -42,6 +42,8 @@ Originally made for Junction Stupidhack 2020; Created by [redsPL](https://sakamo
 
 ## Variables that we think are cool!
 
+![](https://f.sakamoto.pl/d6584c01-1c48-42b9-935b-d9a89af4e071file_101.jpg)
+
 - $post_data - array, contains data from urlencoded POSTs
 - $post_multipart - array, contains URIs to uploaded files from multipart/form-data POSTs
 - $get_data - array, contains data from GETs
