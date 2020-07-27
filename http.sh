@@ -6,6 +6,12 @@ function ctrl_c() {
 	echo -e "Killed all remaining processes.\nHave a great day!!"
 }
 
+source src/worker.sh
+
+if [[ -f "config/app.sh" ]]; then
+	source config/app.sh
+fi
+
 source config/master.sh
 echo "HTTP.sh"
 
