@@ -72,11 +72,11 @@ while read param; do
 		# below shamelessly copied from GET, should be moved to a function
 		data=$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')
 		if [[ $data != ${r[url]} ]]; then
-			declare -A get_data
+			declare -A post_data
 			for i in $data; do
 				name=$(echo $i | sed -E 's/\=(.*)$//')
 				value=$(echo $i | sed "s/$name\=//")
-				get_data[$name]=$value
+				post_data[$name]=$value
 			done
 		fi
 		
@@ -87,19 +87,15 @@ r[uri]=$(realpath ${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//'))
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
 
-echo "---" >> ${cfg[log_misc]}
-echo "$(date)" >> ${cfg[log_misc]}
-if [[ $(tail -n 1 ${cfg[log_http]}) == $(cat /tmp/lasthttp) ]]; then
-	r[ip]=$(tail -n 1 ${cfg[log_https]} | sed -s 's/Ncat: Connection from //')
+r[ip]="$NCAT_REMOTE_ADDR:$NCAT_REMOTE_PORT"
+
+if [[ $NCAT_LOCAL_PORT == ${cfg[port]} ]]; then
 	r[proto]='http'
-	echo "HTTPS IP: ${r[ip]}" >> ${cfg[log_misc]}
 else
-	r[ip]=$(tail -n 1 ${cfg[log_http]} | sed -s 's/Ncat: Connection from //')
 	r[proto]='https'
-	echo "HTTP IP: ${r[ip]}" >> ${cfg[log_misc]}
 fi
-echo "URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> ${cfg[log_misc]}
-tail -n 1 ${cfg[log_http]} > /tmp/lasthttp
+
+echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> ${cfg[log]}
 
 
 if [[ ${r[status]} != 101 ]]; then
