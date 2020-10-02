@@ -5,7 +5,9 @@ cfg[ip]=127.0.0.1 # IP address to bind to - use 0.0.0.0 to bind to all
 cfg[http]=true # enables/disables listening on HTTP
 cfg[port]=1337 # HTTP port
 
-cfg[root]='webroot/'
+cfg[namespace]='app'
+
+cfg[root]='webroot/' 
 cfg[index]='index.shs'
 cfg[autoindex]=true
 
@@ -18,15 +20,14 @@ cfg[ssl_cert]=''
 cfg[ssl_key]=''
 
 cfg[extension]='shs'
-cfg[extra_headers]='server: HTTP.sh/0.92 (devel)'
+cfg[extra_headers]='server: HTTP.sh/0.93 (devel)'
 
-cfg[title]='HTTP.sh 0.92'
+cfg[title]='HTTP.sh 0.93'
 
 cfg[php_enabled]=false # enable PHP script evalutaion (requires PHP)
 cfg[python_enabled]=false # enable Python script evalutaion (requires Python)
 
-# by default, this log file is placed in the main directory - change it to /var/log/_name_ for production
-cfg[log]='log'
+cfg[log]='log' # filename
 
 # proxy functionality is very WiP
 cfg[proxy]=false

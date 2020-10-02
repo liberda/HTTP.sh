@@ -83,7 +83,7 @@ while read param; do
 	fi
 done
 
-r[uri]=$(realpath ${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//'))
+r[uri]=$(realpath "${cfg[namespace]}/${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//')")
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
 
@@ -95,13 +95,13 @@ else
 	r[proto]='https'
 fi
 
-echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> ${cfg[log]}
+echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> "${cfg[namespace]}/${cfg[log]}"
 
 
 if [[ ${r[status]} != 101 ]]; then
 	if [[ -a ${r[uri]} && ! -r ${r[uri]} ]]; then
 		r[status]=403
-	elif [[ "$(echo -n ${r[uri]})" != "$(realpath ${cfg[root]})"* ]]; then
+	elif [[ "$(echo -n ${r[uri]})" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
 		r[status]=403
 	elif [[ -f ${r[uri]} ]]; then
 		r[status]=200
