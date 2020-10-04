@@ -3,6 +3,8 @@ source config/master.sh
 source src/mime.sh
 source src/misc.sh
 source src/account.sh
+[[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
+
 
 declare -A r # current request / response
 declare -A meta # metadata for templates
