@@ -46,13 +46,13 @@ LauraIsCute
 	exit 0
 fi
 
+echo "HTTP.sh"
+
 source src/worker.sh
 
 if [[ -f "${cfg[namespace]}/config.sh" ]]; then
 	source "${cfg[namespace]}/config.sh"
 fi
-
-echo "HTTP.sh"
 
 if [[ ${cfg[http]} == true ]]; then
 	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"

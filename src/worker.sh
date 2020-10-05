@@ -5,6 +5,7 @@
 # worker_add(name, interval)
 function worker_add() {
 	if [[ -x "${cfg[namespace]}/workers/$1/worker.sh" ]]; then
+		echo "[WRKR] adding worker $1"
 		while true; do 
 			source "${cfg[namespace]}/workers/$1/worker.sh"
 			sleep $2
@@ -20,7 +21,7 @@ function worker_add() {
 			 fi
 		done &
 	else
-		echo "You have a broken worker configuration! Please check if worker.sh in worker $1 is executable."
+		echo "[WRKR] Broken config - workers/$1/worker.sh does not exist, or is not executable?"
 	fi
 }
 
