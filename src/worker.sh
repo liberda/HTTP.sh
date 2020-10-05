@@ -6,7 +6,7 @@
 function worker_add() {
 	if [[ -x "${cfg[namespace]}/workers/$1/worker.sh" ]]; then
 		while true; do 
-			"${cfg[namespace]}/workers/$1/worker.sh"
+			source "${cfg[namespace]}/workers/$1/worker.sh"
 			sleep $2
 			if [[ $(cat "${cfg[namespace]}/workers/$1/control") == "die" ]]; then
 				echo "" > ${cfg[namespace]}/workers/$1/control
