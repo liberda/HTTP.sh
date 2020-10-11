@@ -1,0 +1,9 @@
+bash
+ncat
+socat
+grep
+sed
+mktemp
+date
+dd
+file

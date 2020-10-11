@@ -3,14 +3,34 @@ trap ctrl_c INT
 source config/master.sh
 
 function ctrl_c() {
+	[[ $socket != '' ]] && rm $socket
 	pkill -P $$
-	echo -e "Killed all remaining processes.\nHave an awesome day!!"
+	echo -e "Cleaned up, exitting.\nHave an awesome day!!"
 }
 
 if [[ ! -f "$(pwd)/http.sh" ]]; then
 		echo -e "Please run HTTP.sh inside it's designated directory\nRunning the script from arbitrary locations isn't supported."
 		exit 1
 fi	
+
+echo "-= HTTP.sh =-"
+
+for i in $(cat src/dependencies.required); do
+	which $i > /dev/null 2>&1
+	if [[ $? != 0 ]]; then
+		echo "ERROR: can't find $i"
+		error=true
+	fi
+done
+for i in $(cat src/dependencies.optional); do
+	which $i > /dev/null 2>&1
+	[[ $? != 0 ]] && echo "WARNING: can't find $i"
+done
+
+if [[ $error == true ]]; then
+	echo "Fix above dependencies, and we might just let you pass."
+	exit 0
+fi
 
 if [[ $1 == "init" ]]; then # will get replaced with proper parameter parsing in 1.0
 	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example"
@@ -46,8 +66,6 @@ LauraIsCute
 	exit 0
 fi
 
-echo "HTTP.sh"
-
 source src/worker.sh
 
 if [[ -f "${cfg[namespace]}/config.sh" ]]; then
@@ -55,16 +73,20 @@ if [[ -f "${cfg[namespace]}/config.sh" ]]; then
 fi
 
 if [[ ${cfg[http]} == true ]]; then
-	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
-	ncat -v -l ${cfg[ip]} ${cfg[port]} -c ./src/server.sh -k 2>> /dev/null &
+	# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
+	socket=$(mktemp -u /tmp/XXXX.socket)
+	ncat -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+	socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
+	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
+	#ncat -v -l ${cfg[ip]} ${cfg[port]} -c ./src/server.sh -k 2>> /dev/null &
 fi
 
 if [[ ${cfg[ssl]} == true ]]; then
 	echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
 	if [[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]]; then
-		ncat -v -l ${cfg[ip]} ${cfg[ssl_port]} -c ./src/server.sh -k --ssl --ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]} 2>> /dev/null &
+		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c ./src/server.sh -k --ssl --ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]} 2>> /dev/null &
 	else
-		ncat -v -l ${cfg[ip]} ${cfg[ssl_port]} -c ./src/server.sh -k --ssl 2>> /dev/null &
+		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c ./src/server.sh -k --ssl 2>> /dev/null &
 	fi
 fi
 

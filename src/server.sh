@@ -88,13 +88,12 @@ done
 r[uri]=$(realpath "${cfg[namespace]}/${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//')")
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
-
-r[ip]="$NCAT_REMOTE_ADDR:$NCAT_REMOTE_PORT"
-
-if [[ $NCAT_LOCAL_PORT == ${cfg[port]} ]]; then
+if [[ $NCAT_LOCAL_PORT == '' ]]; then
 	r[proto]='http'
+	r[ip]="NCAT_IS_BORK"
 else
 	r[proto]='https'
+	r[ip]="$NCAT_REMOTE_ADDR:$NCAT_REMOTE_PORT"
 fi
 
 echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> "${cfg[namespace]}/${cfg[log]}"
