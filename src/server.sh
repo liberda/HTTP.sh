@@ -3,6 +3,7 @@ source config/master.sh
 source src/mime.sh
 source src/misc.sh
 source src/account.sh
+source src/mail.sh
 [[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
 
 

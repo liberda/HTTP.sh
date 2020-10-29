@@ -20,9 +20,9 @@ cfg[ssl_cert]=''
 cfg[ssl_key]=''
 
 cfg[extension]='shs'
-cfg[extra_headers]='server: HTTP.sh/0.93 (devel)'
+cfg[extra_headers]='server: HTTP.sh/0.94 (devel)'
 
-cfg[title]='HTTP.sh 0.93'
+cfg[title]='HTTP.sh 0.94'
 
 cfg[php_enabled]=false # enable PHP script evalutaion (requires PHP)
 cfg[python_enabled]=false # enable Python script evalutaion (requires Python)
@@ -32,3 +32,10 @@ cfg[log]='log' # filename
 # proxy functionality is very WiP
 cfg[proxy]=false
 cfg[proxy_url]='http://example.com/'
+
+# mail handler config
+cfg[mail]=""
+cfg[mail_server]=""
+cfg[mail_password]=""
+cfg[mail_ssl]=true
+cfg[mail_ignore_bad_cert]=false
