@@ -3,8 +3,12 @@
 
 # mailgen(from, to, subject, msg)
 function mailgen() {
-	echo "From: $1
-To: $2
+	if [[ "$sender_name" != "" ]]; then
+		echo "From: $sender_name <$1>"
+	else
+		echo "From: $1"
+	fi
+	echo "To: $2 
 Subject: $3
 
 $4"
@@ -13,7 +17,7 @@ $4"
 # mailsend(to, subject, msg)
 function mailsend() {
 	tmp="$(mktemp)"
-	mailgen "${cfg[mail]}" "$1" "$2" "$3" > "$tmp"
+	sender_name="$sender_name" mailgen "${cfg[mail]}" "$1" "$2" "$3" > "$tmp"
 
 	curl \
 		$([[ ${cfg[mail_ignore_bad_cert]} == true ]] && printf -- "-k") \

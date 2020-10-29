@@ -71,6 +71,8 @@ function session_verify() {
 
 # session_get_username(session)
 function session_get_username() {
+	[[ "$1" == "" ]] && return
+
 	IFS=':'
 	local data=($(grep ":$1" secret/users.dat))
 	unset IFS
