@@ -78,3 +78,10 @@ function session_get_username() {
 	unset IFS
 	echo ${data[0]}
 }
+
+# THIS FUNCTION IS DANGEROUS
+# delete_account(username)
+function delete_account() {
+  [[ "$1" == "" ]] && return
+  sed -i "s/^$1:.*//;/^$/d" secret/users.dat
+}
