@@ -24,7 +24,7 @@ function register() {
 function login() {
 	local username=$(echo -ne $(echo "$1" | sed -E 's/%/\\x/g'))
 	IFS=':'
-	local user=($(grep "$username:" secret/users.dat))
+	local user=($(grep -P "$username:" secret/users.dat))
 	unset IFS
 	if [[ $(echo -n $2${user[2]} | sha256sum | cut -c 1-64 ) == ${user[1]} ]]; then
 		set_cookie_permanent "sh_session" ${user[3]}

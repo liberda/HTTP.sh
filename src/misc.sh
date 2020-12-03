@@ -36,3 +36,9 @@ function post_dump() {
 			echo "${i}=${post_data[$i]}"
 	done
 }
+
+# html_encode(string)
+function html_encode() {
+	#echo -n "$1" | xxd -ps | sed -E 's/.{2}/\&#x&;/g'
+	echo -n "$1" | sed 's/</\&#60;/g;s/>/\&#62;/g;s/%/\&#37;/g;s/\//\&#47;/g;s/\\/\&#92;/g;s/'"'"'/\&#39;/g;s/"/\&#34;/g;s/`/\&#96;/g;s/?/\&#63;/g'
+}
