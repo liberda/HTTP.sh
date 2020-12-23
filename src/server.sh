@@ -17,76 +17,79 @@ post=false
 get=false
 
 while read param; do
-	if [[ $param == $'\015' ]]; then
+	if [[ "$param" == $'\015' ]]; then
 		break
 		
-	elif [[ $param == *"Content-Length:"* ]]; then
+	elif [[ "$param" == *"Content-Length:"* ]]; then
 		r[content_length]=$(echo -n $param | sed 's/Content-Length: //;s/\r//')
 
-	elif [[ $param == *"Content-Type:"* ]]; then
-		r[content_type]=$(echo -n $param | sed 's/Content-Type: //;s/\r//')
-		if [[ ${r[content_type]} == *"multipart/form-data"* ]]; then
+	elif [[ "$param" == *"Content-Type:"* ]]; then
+		r[content_type]="$(echo -n $param | sed 's/Content-Type: //;s/\r//')"
+		if [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
 			tmpdir=$(mktemp -d)
 		fi
-		if [[ ${r[content_type]} == *"boundary="* ]]; then
-			r[content_boundary]=$(echo -n ${r[content_type]} | sed -E 's/(.*)boundary=//;s/\r//;s/ //')
+		if [[ "${r[content_type]}" == *"boundary="* ]]; then
+			r[content_boundary]="$(echo -n ${r[content_type]} | sed -E 's/(.*)boundary=//;s/\r//;s/ //')"
 		fi
 		
-	elif [[ $param == *"Host:"* ]]; then
-		r[host]=$(printf "$param" | sed 's/Host: //;s/\r//')
-		r[host_portless]=$(echo ${r[host]} | sed -E 's/:(.*)$//')
+	elif [[ "$param" == *"Host:"* ]]; then
+		r[host]="$(printf "$param" | sed 's/Host: //;s/\r//;s/\\//g')"
+		r[host_portless]="$(echo "${r[host]}" | sed -E 's/:(.*)$//')"
 		if [[ -f "config/${r[host]}" ]]; then
 			source "config/${r[host]}"
 		elif [[ -f "config/${r[host_portless]}" ]]; then
 			source "config/${r[host_portless]}"
 		fi
 		
-	elif [[ $param == *"Upgrade:"* && $(printf "$param" | sed 's/Upgrade: //;s/\r//') == "websocket" ]]; then
+	elif [[ "$param" == *"Upgrade:"* && $(printf "$param" | sed 's/Upgrade: //;s/\r//') == "websocket" ]]; then
 		r[status]=101
 		
-	elif [[ $param == *"Sec-WebSocket-Key:"* ]]; then
-		r[websocket_key]=$(printf "$param" | sed 's/Sec-WebSocket-Key: //;s/\r//')
+	elif [[ "$param" == *"Sec-WebSocket-Key:"* ]]; then
+		r[websocket_key]="$(printf "$param" | sed 's/Sec-WebSocket-Key: //;s/\r//')"
 		
-	elif [[ $param == *"Authorization: Basic"* ]]; then
-		login_simple $param
-
-	elif [[ $param == *"Cookie: "* ]]; then
+	elif [[ "$param" == *"Authorization: Basic"* ]]; then
+		login_simple "$param"
+		
+	elif [[ "$param" == *"Authorization: Bearer"* ]]; then
+		r[authorization]="$(printf "$param" | sed 's/Authorization: Bearer //;s/\r//')"
+		
+	elif [[ "$param" == *"Cookie: "* ]]; then
 		for i in $(echo $param | sed -E 's/Cookie: //;s/\;//g;s/%/\\x/g'); do
-			name=$(echo $i | sed -E 's/\=(.*)$//')
-			value=$(echo $i | sed -E 's/^(.*)\=//')
-			cookies[$name]=$(echo -e $value)
+			name="$(echo $i | sed -E 's/\=(.*)$//')"
+			value="$(echo $i | sed -E 's/^(.*)\=//')"
+			cookies[$name]="$(echo -e $value)"
 		done
 		
-	elif [[ $param == *"GET "* ]]; then
-		r[url]=$(echo -ne "$(echo -n $param | sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g')")
-		data=$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')
-		if [[ $data != ${r[url]} ]]; then
+	elif [[ "$param" == *"GET "* ]]; then
+		r[url]="$(echo -ne "$(echo -n $param | sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g')")"
+		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
+		if [[ "$data" != "${r[url]}" ]]; then
 			declare -A get_data
 			for i in $data; do
-				name=$(echo $i | sed -E 's/\=(.*)$//')
-				value=$(echo $i | sed "s/$name\=//")
-				get_data[$name]=$value
+				name="$(echo $i | sed -E 's/\=(.*)$//')"
+				value="$(echo $i | sed "s/$name\=//")"
+				get_data[$name]="$value"
 			done
 		fi
 		
-	elif [[ $param == *"POST "* ]]; then
-		r[url]=$(echo -ne "$(echo -n $param | sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g')")	
+	elif [[ "$param" == *"POST "* ]]; then
+		r[url]="$(echo -ne "$(echo -n $param | sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g')")"
 		r[post]=true
 		# below shamelessly copied from GET, should be moved to a function
-		data=$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')
-		if [[ $data != ${r[url]} ]]; then
+		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
+		if [[ "$data" != "${r[url]}" ]]; then
 			declare -A post_data
 			for i in $data; do
-				name=$(echo $i | sed -E 's/\=(.*)$//')
-				value=$(echo $i | sed "s/$name\=//")
-				post_data[$name]=$value
+				name="$(echo $i | sed -E 's/\=(.*)$//')"
+				value="$(echo $i | sed "s/$name\=//")"
+				post_data[$name]="$value"
 			done
 		fi
 		
 	fi
 done
 
-r[uri]=$(realpath "${cfg[namespace]}/${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//')")
+r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}$(echo ${r[url]} | sed -E 's/\?(.*)$//')")"
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
 if [[ $NCAT_LOCAL_PORT == '' ]]; then
@@ -162,10 +165,10 @@ if [[ ${r[post]} == true && ${r[status]} == 200 ]]; then
 		read -N ${r[content_length]} data
 		declare -A post_data
 		
-		for i in $(echo $data | sed -s 's/\&/ /g;'); do
-			name=$(echo $i | sed -E 's/\=(.*)$//')
-			param=$(echo $i | sed "s/$name\=//")
-			post_data[$name]=$param
+		for i in $(echo "$data" | sed -s 's/\&/ /g;'); do
+			name="$(echo $i | sed -E 's/\=(.*)$//')"
+			param="$(echo $i | sed "s/$name\=//")"
+			post_data[$name]="$param"
 		done
 	fi
 fi
