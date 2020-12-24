@@ -64,7 +64,9 @@ while read param; do
 		r[url]="$(echo -ne "$(echo -n $param | sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g')")"
 		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
 		if [[ "$data" != "${r[url]}" ]]; then
+			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
 			declare -A get_data
+			IFS='&'
 			for i in $data; do
 				name="$(echo $i | sed -E 's/\=(.*)$//')"
 				value="$(echo $i | sed "s/$name\=//")"
@@ -78,7 +80,9 @@ while read param; do
 		# below shamelessly copied from GET, should be moved to a function
 		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
 		if [[ "$data" != "${r[url]}" ]]; then
+			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
 			declare -A post_data
+			IFS='&'
 			for i in $data; do
 				name="$(echo $i | sed -E 's/\=(.*)$//')"
 				value="$(echo $i | sed "s/$name\=//")"
