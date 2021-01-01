@@ -1,6 +1,6 @@
 printf "HTTP/1.0 200 OK
 ${cfg[extra_headers]}\r\n"
-get_mime ${r[uri]}
+get_mime "${r[uri]}"
 [[ $content_type != '' ]] && printf "content-type: $content_type\r\n"
 
 if [[ ${cfg[php_enabled]} == true && ${r[uri]} =~ ".php" ]]; then
@@ -27,5 +27,5 @@ elif [[ ${r[uri]} =~ \.${cfg[extension]}$ ]]; then
 else
 	printf "\r\n"
 	cat "${r[uri]}"
+	
 fi
-

@@ -13,8 +13,8 @@
 # Python (.py) -> no content-type
 
 function get_mime() {
-	local file=$@
-	local mime=$(file --mime-type -b $file)
+	local file="$@"
+	local mime="$(file --mime-type -b "$file")"
 	if [[ $file == *".htm" || $file == *".html" ]]; then
 		content_type="text/html"
 		return 0

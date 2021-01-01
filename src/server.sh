@@ -106,7 +106,6 @@ fi
 
 echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> "${cfg[namespace]}/${cfg[log]}"
 
-
 if [[ ${r[status]} != 101 ]]; then
 	if [[ -a ${r[uri]} && ! -r ${r[uri]} ]]; then
 		r[status]=403

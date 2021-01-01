@@ -66,6 +66,10 @@ LauraIsCute
 	exit 0
 fi
 
+if [[ $1 == "debug" ]]; then
+	cfg[dbg]=true
+fi
+
 source src/worker.sh
 
 if [[ -f "${cfg[namespace]}/config.sh" ]]; then
@@ -75,7 +79,11 @@ fi
 if [[ ${cfg[http]} == true ]]; then
 	# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
 	socket=$(mktemp -u /tmp/XXXX.socket)
-	ncat -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+	if [[ ${cfg[dbg]} == true ]]; then
+		ncat -l -U "$socket" -c src/server.sh -k &
+	else
+		ncat -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+	fi
 	socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
 	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
 	#ncat -v -l ${cfg[ip]} ${cfg[port]} -c ./src/server.sh -k 2>> /dev/null &
@@ -83,10 +91,10 @@ fi
 
 if [[ ${cfg[ssl]} == true ]]; then
 	echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
-	if [[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]]; then
-		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c ./src/server.sh -k --ssl --ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]} 2>> /dev/null &
+	if [[ ${cfg[dbg]} == true ]]; then
+		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") &
 	else
-		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c ./src/server.sh -k --ssl 2>> /dev/null &
+		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null &
 	fi
 fi
 
