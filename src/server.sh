@@ -56,8 +56,8 @@ while read param; do
 	elif [[ "$param" == *"Cookie: "* ]]; then
 		IFS=';'
 		for i in $(IFS=' '; echo "$param" | sed -E 's/Cookie: //;;s/%/\\x/g'); do
-			name="$((grep -Poh ".*?(?==)" | head -1) <<< $i)"
-			value="$(sed "s/$name=//" <<< $i)"
+			name="$((grep -Poh "[^ ].*?(?==)" | head -1) <<< $i)"
+			value="$(sed "s/$name=//;s/^ //;s/ $//" <<< $i)"
 			cookies[$name]="$(echo -e $value)"
 		done
 		
