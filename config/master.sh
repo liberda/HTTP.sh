@@ -1,9 +1,9 @@
 declare -A cfg
 
-cfg[ip]=127.0.0.1 # IP address to bind to - use 0.0.0.0 to bind to all
+cfg[ip]=0.0.0.0 # IP address to bind to - use 0.0.0.0 to bind to all
 
 cfg[http]=true # enables/disables listening on HTTP
-cfg[port]=1337 # HTTP port
+cfg[port]=1341 # HTTP port
 
 cfg[namespace]='app'
 

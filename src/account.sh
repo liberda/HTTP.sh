@@ -74,7 +74,7 @@ function session_get_username() {
 	[[ "$1" == "" ]] && return
 
 	IFS=':'
-	local data=($(grep ":$1" secret/users.dat))
+	local data=($(grep ":$1$" secret/users.dat))
 	unset IFS
 	echo ${data[0]}
 }

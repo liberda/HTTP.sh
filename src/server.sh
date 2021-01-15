@@ -54,9 +54,10 @@ while read param; do
 		r[authorization]="$(printf "$param" | sed 's/Authorization: Bearer //;s/\r//')"
 		
 	elif [[ "$param" == *"Cookie: "* ]]; then
-		for i in $(echo $param | sed -E 's/Cookie: //;s/\;//g;s/%/\\x/g'); do
-			name="$(echo $i | sed -E 's/\=(.*)$//')"
-			value="$(echo $i | sed -E 's/^(.*)\=//')"
+		IFS=';'
+		for i in $(IFS=' '; echo "$param" | sed -E 's/Cookie: //;;s/%/\\x/g'); do
+			name="$((grep -Poh ".*?(?==)" | head -1) <<< $i)"
+			value="$(sed "s/$name=//" <<< $i)"
 			cookies[$name]="$(echo -e $value)"
 		done
 		
