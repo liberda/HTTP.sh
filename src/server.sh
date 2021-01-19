@@ -17,6 +17,11 @@ post=false
 get=false
 
 while read param; do
+	name=''
+	value=''
+	data=''
+	unset IFS
+	
 	if [[ "$param" == $'\015' ]]; then
 		break
 		
@@ -52,7 +57,7 @@ while read param; do
 		
 	elif [[ "$param" == *"Authorization: Bearer"* ]]; then
 		r[authorization]="$(printf "$param" | sed 's/Authorization: Bearer //;s/\r//')"
-		
+
 	elif [[ "$param" == *"Cookie: "* ]]; then
 		IFS=';'
 		for i in $(IFS=' '; echo "$param" | sed -E 's/Cookie: //;;s/%/\\x/g'); do
@@ -89,8 +94,7 @@ while read param; do
 				value="$(echo $i | sed "s/$name\=//")"
 				post_data[$name]="$value"
 			done
-		fi
-		
+		fi		
 	fi
 done
 
