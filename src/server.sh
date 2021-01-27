@@ -13,8 +13,6 @@ declare -A cookies # cookies!
 
 r[status]=210 # Mommy always said that I was special
 post_length=0
-post=false
-get=false
 
 while read param; do
 	name=''
@@ -87,12 +85,12 @@ while read param; do
 		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
 		if [[ "$data" != "${r[url]}" ]]; then
 			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
-			declare -A post_data
+			declare -A get_data
 			IFS='&'
 			for i in $data; do
 				name="$(echo $i | sed -E 's/\=(.*)$//')"
 				value="$(echo $i | sed "s/$name\=//")"
-				post_data[$name]="$value"
+				get_data[$name]="$value"
 			done
 		fi		
 	fi
@@ -170,14 +168,17 @@ if [[ ${r[post]} == true && ${r[status]} == 200 ]]; then
 		done
 		rm $tmpfile
 	else
-		read -N ${r[content_length]} data
+		read -N "${r[content_length]}" data
 		declare -A post_data
-		
-		for i in $(echo "$data" | sed -s 's/\&/ /g;'); do
-			name="$(echo $i | sed -E 's/\=(.*)$//')"
-			param="$(echo $i | sed "s/$name\=//")"
+
+		IFS='&'
+		#for i in $(sed -s 's/\&/ /g;' <<< "$data"); do
+		for i in $(tr -d '\n' <<< "$data"); do
+			name="$(sed -E 's/\=(.*)$//' <<< "$i")"
+			param="$(sed "s/$name\=//" <<< "$i")"
 			post_data[$name]="$param"
 		done
+		unset IFS
 	fi
 fi
 
