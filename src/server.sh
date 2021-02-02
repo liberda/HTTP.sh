@@ -44,6 +44,9 @@ while read param; do
 		elif [[ -f "config/${r[host_portless]}" ]]; then
 			source "config/${r[host_portless]}"
 		fi
+
+	elif [[ "$param_l" == *"user-agent:"* ]]; then
+		r[user_agent]="$(sed 's/User-Agent: //i;s/\r//;s/\\//g' <<< "$param")"
 		
 	elif [[ "$param_l" == *"upgrade:"* && $(sed 's/Upgrade: //i;s/\r//' <<< "$param") == "websocket" ]]; then
 		r[status]=101
