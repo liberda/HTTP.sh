@@ -1,23 +1,33 @@
 printf "HTTP/1.0 200 OK
 ${cfg[extra_headers]}\r\n"
-get_mime "${r[uri]}"
-[[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
 
-if [[ ${cfg[php_enabled]} == true && ${r[uri]} =~ ".php" ]]; then
+if [[ ${r[status]} == 200 ]]; then
+	get_mime "${r[uri]}"
+	[[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
+fi
+
+if [[ ${r[status]} == 212 ]]; then
+	temp=$(mktemp)
+	source "${r[view]}" > $temp
+	[[ "${r[headers]}" != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
+	cat $temp
+	rm $temp
+	
+elif [[ "${cfg[php_enabled]}" == true && "${r[uri]}" =~ ".php" ]]; then
 	temp=$(mktemp)
 	php "${r[uri]}" "$(get_dump)" "$(post_dump)" > $temp
-	[[ ${r[headers]} != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
+	[[ "${r[headers]}" != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
 	cat $temp
 	rm $temp
 
-elif [[ ${cfg[python_enabled]} == true && ${r[uri]} =~ ".py" ]]; then
+elif [[ "${cfg[python_enabled]}" == true && "${r[uri]}" =~ ".py" ]]; then
 	temp=$(mktemp)
 	python "${r[uri]}" "$(get_dump)" "$(post_dump)" > $temp
-	[[ ${r[headers]} != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
+	[[ "${r[headers]}" != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
 	cat $temp
 	rm $temp
 
-elif [[ ${r[uri]} =~ \.${cfg[extension]}$ ]]; then
+elif [[ "${r[uri]}" =~ \.${cfg[extension]}$ ]]; then
 	temp=$(mktemp)
 	source "${r[uri]}" > $temp
 	[[ "${r[headers]}" != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"

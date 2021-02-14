@@ -4,12 +4,16 @@ source src/mime.sh
 source src/misc.sh
 source src/account.sh
 source src/mail.sh
+source src/route.sh
 [[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
-
+[[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
 declare -A r # current request / response
 declare -A meta # metadata for templates
 declare -A cookies # cookies!
+declare -A get_data # all GET params
+declare -A post_data # all POST params
+declare -A params # parsed router data
 
 r[status]=210 # Mommy always said that I was special
 post_length=0
@@ -73,7 +77,6 @@ while read param; do
 		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
 		if [[ "$data" != "${r[url]}" ]]; then
 			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
-			declare -A get_data
 			IFS='&'
 			for i in $data; do
 				name="$(echo $i | sed -E 's/\=(.*)$//')"
@@ -89,7 +92,6 @@ while read param; do
 		data="$(sed -E 's/^(.*)\?//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
 			data="$(sed -E 's/^(.*)\?//' <<< "${r[url]}")"
-			declare -A get_data
 			IFS='&'
 			for i in $data; do
 				name="$(echo $i | sed -E 's/\=(.*)$//')"
@@ -114,23 +116,44 @@ fi
 echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> "${cfg[namespace]}/${cfg[log]}"
 
 if [[ ${r[status]} != 101 ]]; then
-	if [[ -a ${r[uri]} && ! -r ${r[uri]} ]]; then
-		r[status]=403
-	elif [[ "$(echo -n ${r[uri]})" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
-		r[status]=403
-	elif [[ -f ${r[uri]} ]]; then
-		r[status]=200
-	elif [[ -d ${r[uri]} ]]; then
-		for name in ${cfg[index]}; do
-			if [[ -f "${r[uri]}/$name" ]]; then
-				r[uri]="${r[uri]}/$name"
-				r[status]=200
-			fi
-		done
-	else
-		r[status]=404
+	for (( i=0; i<${#route[@]}; i=i+3 )); do
+		if [[ "$(grep -Poh "${route[$((i+1))]}$" <<< "${r[url]}")" != "" ]]; then
+			r[status]=212
+			r[view]="${route[$((i+2))]}"
+			IFS='/'
+			url=(${route[$i]})
+			url_=(${r[url]})
+			unset IFS
+			for (( j=0; j<${#url[@]}; j++ )); do
+				if [[ ${url_[$j]} != '' ]]; then
+					params[$(sed 's/://' <<< "${url[$j]}")]="${url_[$j]}"
+				fi
+			done
+			break
+		fi
+	done
+	unset IFS
+	if [[ ${r[status]} != 212 ]]; then
+		if [[ -a "${r[uri]}" && ! -r "${r[uri]}" ]]; then
+			r[status]=403
+		elif [[ "$(echo -n "${r[uri]}")" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
+			r[status]=403
+		elif [[ -f "${r[uri]}" ]]; then
+			r[status]=200
+		elif [[ -d "${r[uri]}" ]]; then
+			for name in ${cfg[index]}; do
+				if [[ -f "${r[uri]}/$name" ]]; then
+					r[uri]="${r[uri]}/$name"
+					r[status]=200
+				fi
+			done
+		else
+			r[status]=404
+		fi
 	fi
 fi
+
+echo "${r[url]}" >&2
 
 if [[ ${cfg[auth_required]} == true && ${r[authorized]} != true ]]; then
 	echo "Auth failed." >> ${cfg[log_misc]}
@@ -173,8 +196,7 @@ if [[ ${r[post]} == true && ${r[status]} == 200 ]]; then
 		rm $tmpfile
 	else
 		read -N "${r[content_length]}" data
-		declare -A post_data
-
+		
 		IFS='&'
 		for i in $(tr -d '\n' <<< "$data"); do
 			name="$(sed -E 's/\=(.*)$//' <<< "$i")"
@@ -189,7 +211,7 @@ if [[ ${r[status]} == 210 && ${cfg[autoindex]} == true ]]; then
 	source "src/response/listing.sh"
 elif [[ ${r[status]} == 211 ]]; then
 	source "src/response/proxy.sh"
-elif [[ ${r[status]} == 200 ]]; then
+elif [[ ${r[status]} == 200 || ${r[status]} == 212 ]]; then
 	source "src/response/200.sh"
 elif [[ ${r[status]} == 401 ]]; then
 	source "src/response/401.sh"

@@ -13,7 +13,6 @@ if [[ ! -f "$(pwd)/http.sh" ]]; then
 		exit 1
 fi	
 
-echo "-= HTTP.sh =-"
 
 for i in $(cat src/dependencies.required); do
 	which $i > /dev/null 2>&1
@@ -33,14 +32,13 @@ if [[ $error == true ]]; then
 fi
 
 if [[ $1 == "init" ]]; then # will get replaced with proper parameter parsing in 1.0
-	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example"
+	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views"
 	touch "${cfg[namespace]}/config.sh" "${cfg[namespace]}/workers/example/control"
 	cat <<LauraIsCute > "${cfg[namespace]}/config.sh"
-# app config - loaded on server bootup
-# your application-specific config goes here!
+## app config
+## your application-specific config goes here!
 
-# worker_add <worker> <interval>
-# ---
+
 # worker_add example 5
 LauraIsCute
 
@@ -60,14 +58,41 @@ echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(
 	 <li>$(pwd)/src/ - HTTP.sh src, feel free to poke around :P</li></ul>
 	 &copy; sdomi, selfisekai, ptrcnull - 2020"
 LauraIsCute
+	cat <<PtrcIsCute > "${cfg[namespace]}/routes.sh"
+## routes - application-specific routes
+##
+## HTTP.sh supports both serving files using a directory structure (webroot),
+## and using routes. The latter may come in handy if you want to create nicer
+## paths, e.g.
+##
+## (webroot) https://example.com/profile.shs?name=ptrcnull
+## ... may become ...
+## (routes)  https://example.com/profile/ptrcnull
+##
+## To set up routes, define rules in this file (see below for examples)
+
+# router "/test" "app/views/test.shs"
+# router "/profile/:user" "app/views/user.shs"
+PtrcIsCute
+
 	chmod +x "${cfg[namespace]}/workers/example/worker.sh"
 	
 	echo -e "Success..?\nTry running ./http.sh now"
 	exit 0
 fi
 
+cat <<PtrcIsCute >&2
+ _    _ _______ _______ _____  ______ _    _ 
+| |  | |_______|_______|  _  \/  ___/| |  | |
+| |__| |  | |     | |  | |_| | |___  | |__| |
+| |__| |  | |     | |  |  ___/\___ \ | |__| |
+| |  | |  | |     | |  | |     ___\ \| |  | |
+|_|  |_|  |_|     |_|  |_|  □ /_____/|_|  |_|
+PtrcIsCute
+
 if [[ $1 == "debug" ]]; then
 	cfg[dbg]=true
+	echo "[DEBUG] Activated debug mode - stderr will be shown"
 fi
 
 source src/worker.sh
