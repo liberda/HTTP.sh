@@ -6,7 +6,6 @@ source src/account.sh
 source src/mail.sh
 source src/route.sh
 [[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
-[[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
 declare -A r # current request / response
 declare -A meta # metadata for templates
@@ -114,6 +113,8 @@ else
 fi
 
 echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> "${cfg[namespace]}/${cfg[log]}"
+
+[[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
 if [[ ${r[status]} != 101 ]]; then
 	for (( i=0; i<${#route[@]}; i=i+3 )); do
