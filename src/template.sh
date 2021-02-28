@@ -18,7 +18,7 @@ function render_unsafe() {
 	local template="$(cat "$2")"
 	local -n ref=$1
 	for key in ${!ref[@]}; do
-		local value="$(sed -E 's/\&/\\\&/g;s/\//\\\//g' <<< "${ref[$key]}")"
+		local value="$(xxd -ps <<< "${ref[$key]}" | tr -d '\n' | sed -E 's/.{2}/\\x&/g')"
 		template="$(sed -E 's/\{\{\.'"$key"'\}\}/'"$value"'/g' <<< "$template")"
 	done
 
