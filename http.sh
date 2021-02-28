@@ -32,7 +32,7 @@ if [[ $error == true ]]; then
 fi
 
 if [[ $1 == "init" ]]; then # will get replaced with proper parameter parsing in 1.0
-	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views"
+	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates"
 	touch "${cfg[namespace]}/config.sh" "${cfg[namespace]}/workers/example/control"
 	cat <<LauraIsCute > "${cfg[namespace]}/config.sh"
 ## app config

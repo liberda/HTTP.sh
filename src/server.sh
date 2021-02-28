@@ -5,6 +5,7 @@ source src/misc.sh
 source src/account.sh
 source src/mail.sh
 source src/route.sh
+source src/template.sh
 [[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
 
 declare -A r # current request / response
@@ -17,7 +18,7 @@ declare -A params # parsed router data
 r[status]=210 # Mommy always said that I was special
 post_length=0
 
-while read param; do
+while read -r param; do
 	param_l="${param,,}" # lowercase
 	name=''
 	value=''
