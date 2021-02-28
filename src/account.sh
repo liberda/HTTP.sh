@@ -4,7 +4,7 @@
 
 # register(username, password)
 function register() {
-	local username=$(echo -ne $(printf "$1" | sed -E "s/ /_/g;s/\:/\-/g;s/\%/\\x/g"))
+	local username=$(echo -ne $(sed -E "s/ /_/g;s/\:/\-/g;s/\%/\\x/g" <<< "$1"))
 
 	if [[ $(grep "$username:" secret/users.dat) != '' ]]; then
 		reason="This user already exists!"
@@ -22,13 +22,13 @@ function register() {
 
 # login(username, password) 
 function login() {
-	local username=$(echo -ne $(echo "$1" | sed -E 's/%/\\x/g'))
+	local username=$(echo -ne $(sed -E 's/%/\\x/g' <<< "$1"))
 	IFS=':'
 	local user=($(grep -P "$username:" secret/users.dat))
 	unset IFS
-	if [[ $(echo -n $2${user[2]} | sha256sum | cut -c 1-64 ) == ${user[1]} ]]; then
-		set_cookie_permanent "sh_session" ${user[3]}
-		set_cookie_permanent "username" $username
+	if [[ $(echo -n $2${user[2]} | sha256sum | cut -c 1-64 ) == "${user[1]}" ]]; then
+		set_cookie_permanent "sh_session" "${user[3]}"
+		set_cookie_permanent "username" "$username"
 		return 0
 	else
 		remove_cookie "sh_session"
@@ -40,9 +40,9 @@ function login() {
 
 # login_simple(base64)
 function login_simple() {
-	local data=$(echo $3 | base64 -d)
-	local password=$(echo $data | sed -E 's/^(.*)\://')
-	local login=$(echo $data | sed -E 's/\:(.*)$//')
+	local data=$(base64 -d <<< "$3")
+	local password=$(sed -E 's/^(.*)\://' <<< "$data")
+	local login=$(sed -E 's/\:(.*)$//' <<< "$data")
 	
 	IFS=':'
 	local user=($(grep "$login:" secret/users.dat))

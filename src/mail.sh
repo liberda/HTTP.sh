@@ -20,8 +20,8 @@ function mailsend() {
 	sender_name="$sender_name" mailgen "${cfg[mail]}" "$1" "$2" "$3" > "$tmp"
 
 	curl \
-		$([[ ${cfg[mail_ignore_bad_cert]} == true ]] && printf -- "-k") \
-		$([[ ${cfg[mail_ssl]} == true ]] && printf -- "--ssl") \
+		$([[ "${cfg[mail_ignore_bad_cert]}" == true ]] && printf -- "-k") \
+		$([[ "${cfg[mail_ssl]}" == true ]] && printf -- "--ssl") \
 		"smtp://${cfg[mail_server]}" \
 		--mail-from "${cfg[mail]}" \
 		--mail-rcpt "$1" \

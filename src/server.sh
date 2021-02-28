@@ -156,16 +156,16 @@ fi
 
 echo "${r[url]}" >&2
 
-if [[ ${cfg[auth_required]} == true && ${r[authorized]} != true ]]; then
+if [[ "${cfg[auth_required]}" == true && "${r[authorized]}" != true ]]; then
 	echo "Auth failed." >> ${cfg[log_misc]}
 	r[status]=401
 fi
 
-if [[ ${cfg[proxy]} == true ]]; then
+if [[ "${cfg[proxy]}" == true ]]; then
 	r[status]=211
 fi
 
-if [[ ${r[post]} == true && ${r[status]} == 200 ]]; then
+if [[ "${r[post]}" == true && "${r[status]}" == 200 ]]; then
 
 	# This whole ordeal is here to prevent passing binary data as a variable.
 	# I could have done it as an array, but this solution works, and it's

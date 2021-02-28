@@ -1,4 +1,5 @@
 #!/bin/bash
+# route.sh - basic router stub
 
 # router(uri, path)
 function router() {
