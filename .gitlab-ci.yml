@@ -1,5 +1,6 @@
 services:
-    - docker.ptrc.pl/docker:20.10-dind
+    - name: docker.ptrc.pl/docker:20.10-dind
+      alias: docker
 
 variables:
     DOCKER_DRIVER: overlay2
@@ -9,7 +10,7 @@ stages:
   - push
 
 docker-push:
-  image: docker.ptrc.pl/docker
+  image: docker.ptrc.pl/docker:20.10
   stage: push
   before_script:
     - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" docker.ptrc.pl
