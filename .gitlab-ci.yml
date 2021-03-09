@@ -15,8 +15,8 @@ docker-push:
   before_script:
     - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" docker.ptrc.pl
   script:
-    - docker build -t docker.ptrc.pl/laudompat/http.sh .
-    - docker push docker.ptrc.pl/laudompat/http.sh
+    - docker build -t docker.ptrc.pl/http.sh .
+    - docker push docker.ptrc.pl/http.sh
   only:
     refs:
       - master
