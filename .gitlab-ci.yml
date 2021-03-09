@@ -1,5 +1,5 @@
 services:
-    - docker:18-dind
+    - docker.ptrc.pl/docker:18-dind
 
 variables:
     DOCKER_DRIVER: overlay2
@@ -8,13 +8,13 @@ stages:
   - push
 
 docker-push:
-  image: docker
+  image: docker.ptrc.pl/docker
   stage: push
   before_script:
-    - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD"  repo.ptrc.pl
+    - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" docker.ptrc.pl
   script:
-    - docker build -t repo.ptrc.pl/laudompat/http.sh .
-    - docker push repo.ptrc.pl/laudompat/http.sh
+    - docker build -t docker.ptrc.pl/laudompat/http.sh .
+    - docker push docker.ptrc.pl/laudompat/http.sh
   only:
     refs:
       - master
