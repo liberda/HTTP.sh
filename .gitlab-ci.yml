@@ -1,5 +1,5 @@
 services:
-    - docker.ptrc.pl/docker:18-dind
+    - docker.ptrc.pl/docker:20.10-dind
 
 variables:
     DOCKER_DRIVER: overlay2
