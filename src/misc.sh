@@ -39,5 +39,15 @@ function post_dump() {
 
 # html_encode(string)
 function html_encode() {
-	sed 's/</\&#60;/g;s/>/\&#62;/g;s/%/\&#37;/g;s/\//\&#47;/g;s/\\/\&#92;/g;s/'"'"'/\&#39;/g;s/"/\&#34;/g;s/`/\&#96;/g;s/?/\&#63;/g' <<< "$1"
+	sed 's/</\&#60;/g;s/>/\&#62;/g;s/%/\&#37;/g;s/\//\&#47;/g;s/\\/\&#92;/g;s/'"'"'/\&#39;/g;s/"/\&#34;/g;s/`/\&#96;/g;s/?/\&#63;/g;s/\&/\&amp;/g' <<< "$1"
+}
+
+# url_encode(string)
+function url_encode() {
+	xxd -ps -u <<< "$1" | tr -d '\n' | sed -E 's/.{2}/%&/g'
+}
+
+# url_decode(string)
+function url_decode() {
+	echo -ne "$(sed -E 's/%[0-1][0-9a-f]//g;s/%/\\x/g' <<< "$1")"
 }
