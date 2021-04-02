@@ -58,10 +58,10 @@ while read -r param; do
 	elif [[ "$param_l" == *"sec-websocket-key:"* ]]; then
 		r[websocket_key]="$(sed 's/Sec-WebSocket-Key: //i;s/\r//' <<< "$param")"
 		
-	elif [[ "$param_l" == *"authorization: Basic"* ]]; then
+	elif [[ "$param_l" == *"authorization: basic"* ]]; then
 		login_simple "$param"
 		
-	elif [[ "$param_l" == *"authorization: Bearer"* ]]; then
+	elif [[ "$param_l" == *"authorization: bearer"* ]]; then
 		r[authorization]="$(sed 's/Authorization: Bearer //i;s/\r//' <<< "$param")"
 
 	elif [[ "$param_l" == *"cookie: "* ]]; then
@@ -73,20 +73,20 @@ while read -r param; do
 		done
 		
 	elif [[ "$param" == *"GET "* ]]; then
-		r[url]="$(echo -ne "$(sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")"
+		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
 		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
 		if [[ "$data" != "${r[url]}" ]]; then
 			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
 			IFS='&'
 			for i in $data; do
-				name="$(echo $i | sed -E 's/\=(.*)$//')"
-				value="$(echo $i | sed "s/$name\=//")"
+				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
+				value="$(sed "s/$name\=//" <<< "$i")"
 				get_data[$name]="$value"
 			done
 		fi
 		
 	elif [[ "$param" == *"POST "* ]]; then
-		r[url]="$(echo -ne "$(sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\%/\\x/g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")"
+		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
 		r[post]=true
 		# below shamelessly copied from GET, should be moved to a function
 		data="$(sed -E 's/^(.*)\?//;s/\&/ /g' <<< "${r[url]}")"
@@ -94,9 +94,9 @@ while read -r param; do
 			data="$(sed -E 's/^(.*)\?//' <<< "${r[url]}")"
 			IFS='&'
 			for i in $data; do
-				name="$(echo $i | sed -E 's/\=(.*)$//')"
-				value="$(echo $i | sed "s/$name\=//")"
-				get_data[$name]="$value"
+				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
+				value="$(sed "s/$name\=//" <<< "$i")"
+				post_data[$name]="$value"
 			done
 		fi		
 	fi
