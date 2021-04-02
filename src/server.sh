@@ -43,10 +43,10 @@ while read -r param; do
 	elif [[ "$param_l" == *"host:"* ]]; then
 		r[host]="$(sed 's/Host: //i;s/\r//;s/\\//g' <<< "$param")"
 		r[host_portless]="$(sed -E 's/:(.*)$//' <<< "${r[host]}")"
-		if [[ -f "config/${r[host]}" ]]; then
-			source "config/${r[host]}"
-		elif [[ -f "config/${r[host_portless]}" ]]; then
-			source "config/${r[host_portless]}"
+		if [[ -f "config/$(basename -- ${r[host]})" ]]; then
+			source "config/$(basename -- ${r[host]})"
+		elif [[ -f "config/$(basename -- ${r[host_portless]})" ]]; then
+			source "config/$(basename -- ${r[host_portless]})"
 		fi
 
 	elif [[ "$param_l" == *"user-agent:"* ]]; then
