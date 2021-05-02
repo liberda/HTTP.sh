@@ -113,7 +113,7 @@ else
 	r[ip]="$NCAT_REMOTE_ADDR:$NCAT_REMOTE_PORT"
 fi
 
-echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}" >> "${cfg[namespace]}/${cfg[log]}"
+echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}, UA: ${r[user_agent]}" >> "${cfg[namespace]}/${cfg[log]}"
 
 [[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
