@@ -71,10 +71,13 @@ while read -r param; do
 			value="$(sed "s/$name=//;s/^ //;s/ $//" <<< $i)"
 			cookies[$name]="$(echo -e $value)"
 		done
+
+	elif [[ "$param_l" == *"range: bytes="* ]]; then
+		r[range]="$(sed 's/Range: bytes=//;s/\r//' <<< "$param")"
 		
 	elif [[ "$param" == *"GET "* ]]; then
 		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
-		data="$(echo ${r[url]} | sed -E 's/^(.*)\?//;s/\&/ /g')"
+		data="$(sed -E 's/\?/��MaE_iS_CuTe�/;s/^(.*)��MaE_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
 			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
 			IFS='&'
@@ -89,7 +92,7 @@ while read -r param; do
 		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
 		r[post]=true
 		# below shamelessly copied from GET, should be moved to a function
-		data="$(sed -E 's/^(.*)\?//;s/\&/ /g' <<< "${r[url]}")"
+		data="$(sed -E 's/\?/��MaE_iS_CuTe�/;s/^(.*)��MaE_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
 			data="$(sed -E 's/^(.*)\?//' <<< "${r[url]}")"
 			IFS='&'

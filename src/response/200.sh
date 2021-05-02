@@ -7,11 +7,16 @@ if [[ ${r[status]} == 200 ]]; then
 fi
 
 if [[ ${r[status]} == 212 ]]; then
-	temp=$(mktemp)
-	source "${r[view]}" > $temp
-	[[ "${r[headers]}" != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
-	cat $temp
-	rm $temp
+	if [[ "${cfg[unbuffered]}" == true ]]; then
+		printf "\r\n"
+		source "${r[view]}"
+	else
+		temp=$(mktemp)
+		source "${r[view]}" > $temp
+		[[ "${r[headers]}" != '' ]] && printf "${r[headers]}\r\n\r\n" || printf "\r\n"
+		cat $temp
+		rm $temp
+	fi
 	
 elif [[ "${cfg[php_enabled]}" == true && "${r[uri]}" =~ ".php" ]]; then
 	temp=$(mktemp)
