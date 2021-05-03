@@ -160,6 +160,7 @@ fi
 
 echo "${r[url]}" >&2
 
+
 if [[ "${cfg[auth_required]}" == true && "${r[authorized]}" != true ]]; then
 	echo "Auth failed." >> ${cfg[log_misc]}
 	r[status]=401
@@ -211,6 +212,9 @@ if [[ "${r[post]}" == true && "${r[status]}" == 200 ]]; then
 		unset IFS
 	fi
 fi
+
+# the app config gets loaded a second time to allow for path-specific config modification
+[[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
 
 if [[ ${r[status]} == 210 && ${cfg[autoindex]} == true ]]; then
 	source "src/response/listing.sh"

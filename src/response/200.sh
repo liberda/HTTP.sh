@@ -1,5 +1,9 @@
-printf "HTTP/1.0 200 OK
+if [[ "${cfg[unbuffered]}" != true ]]; then
+	printf "HTTP/1.0 200 OK
 ${cfg[extra_headers]}\r\n"
+else
+	echo "uh oh - we're running unbuffered" > /dev/stderr
+fi
 
 if [[ ${r[status]} == 200 ]]; then
 	get_mime "${r[uri]}"
@@ -8,7 +12,6 @@ fi
 
 if [[ ${r[status]} == 212 ]]; then
 	if [[ "${cfg[unbuffered]}" == true ]]; then
-		printf "\r\n"
 		source "${r[view]}"
 	else
 		temp=$(mktemp)
