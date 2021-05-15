@@ -75,8 +75,16 @@ for i in $(cat src/dependencies.optional); do
 	[[ $? != 0 ]] && echo "WARNING: can't find $i"
 done
 
+which ncat > /dev/null 2>&1
+if [[ $? != 0 ]]; then
+	if [[ ${cfg[socat_only]} != true ]]; then
+		echo "ERROR: can't find ncat, and cfg[socat_only] is not set to true"
+		error=true
+	fi
+fi
+
 if [[ $error == true ]]; then
-	echo "Fix above dependencies, and we might just let you pass."
+	echo "Fix above dependencies, and I might just let you pass."
 	exit 0
 fi
 
@@ -105,7 +113,7 @@ echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(
 	 <li>$(pwd)/${cfg[namespace]}/config.sh - config for everything specific to your app AND workers</li>
 	 <li>$(pwd)/config/master.sh - master server config</li>
 	 <li>$(pwd)/src/ - HTTP.sh src, feel free to poke around :P</li></ul>
-	 &copy; sdomi, selfisekai, ptrcnull - 2020"
+	 &copy; sdomi, ptrcnull, selfisekai - 2020, 2021"
 LauraIsCute
 	cat <<PtrcIsCute > "${cfg[namespace]}/routes.sh"
 ## routes - application-specific routes
@@ -139,7 +147,7 @@ cat <<PtrcIsCute >&2
 |_|  |_|  |_|     |_|  |_|  □ /_____/|_|  |_|
 PtrcIsCute
 
-if [[ $1 == "debug" ]]; then
+if [[ "$1" == "debug" ]]; then
 	cfg[dbg]=true
 	echo "[DEBUG] Activated debug mode - stderr will be shown"
 fi
@@ -150,25 +158,38 @@ if [[ -f "${cfg[namespace]}/config.sh" ]]; then
 	source "${cfg[namespace]}/config.sh"
 fi
 
-if [[ ${cfg[http]} == true ]]; then
-	# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
-	socket=$(mktemp -u /tmp/XXXX.socket)
+if [[ ${cfg[socat_only]} == true ]]; then
+	echo "[INFO] listening directly via socat, assuming no ncat available"
+	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
 	if [[ ${cfg[dbg]} == true ]]; then
-		ncat -l -U "$socket" -c src/server.sh -k &
+		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh"
 	else
-		ncat -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
+		if [[ $? != 0 ]]; then
+			echo "[WARN] socat exitted with a non-zero status; Maybe the port is in use?"
+		fi
 	fi
-	socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
-	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
-	#ncat -v -l ${cfg[ip]} ${cfg[port]} -c ./src/server.sh -k 2>> /dev/null &
-fi
+else
+	if [[ ${cfg[http]} == true ]]; then
+		# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
+		socket=$(mktemp -u /tmp/XXXX.socket)
+		if [[ ${cfg[dbg]} == true ]]; then
+			ncat -l -U "$socket" -c src/server.sh -k &
+		else
+			ncat -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+		fi
+		socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
+		echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
+		#ncat -v -l ${cfg[ip]} ${cfg[port]} -c ./src/server.sh -k 2>> /dev/null &
+	fi
 
-if [[ ${cfg[ssl]} == true ]]; then
-	echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
-	if [[ ${cfg[dbg]} == true ]]; then
-		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") &
-	else
-		ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null &
+	if [[ ${cfg[ssl]} == true ]]; then
+		echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
+		if [[ ${cfg[dbg]} == true ]]; then
+			ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") &
+		else
+			ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null &
+		fi
 	fi
 fi
 
