@@ -21,8 +21,8 @@ function mailsend() {
 
 	curl \
 		$([[ "${cfg[mail_ignore_bad_cert]}" == true ]] && printf -- "-k") \
-		$([[ "${cfg[mail_ssl]}" == true ]] && printf -- "--ssl") \
-		"smtp://${cfg[mail_server]}" \
+		$([[ "${cfg[mail_ssl]}" == true ]] && printf -- "smtps://${cfg[mail_server]}") \
+		$([[ "${cfg[mail_ssl]}" != true ]] && printf -- "smtp://${cfg[mail_server]}") \
 		--mail-from "${cfg[mail]}" \
 		--mail-rcpt "$1" \
 		--upload-file "$tmp" \
