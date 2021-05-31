@@ -77,9 +77,8 @@ while read -r param; do
 		
 	elif [[ "$param" == *"GET "* ]]; then
 		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
-		data="$(sed -E 's/\?/��MaE_iS_CuTe�/;s/^(.*)��MaE_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
+		data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
-			data="$(echo ${r[url]} | sed -E 's/^(.*)\?//')"
 			IFS='&'
 			for i in $data; do
 				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
@@ -92,9 +91,8 @@ while read -r param; do
 		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
 		r[post]=true
 		# below shamelessly copied from GET, should be moved to a function
-		data="$(sed -E 's/\?/��MaE_iS_CuTe�/;s/^(.*)��MaE_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
+		data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
-			data="$(sed -E 's/^(.*)\?//' <<< "${r[url]}")"
 			IFS='&'
 			for i in $data; do
 				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
