@@ -4,13 +4,13 @@ trap ctrl_c INT
 if [[ ! -f "config/master.sh" ]]; then
 	mkdir -p config
 	cat <<PtrcIsCute > "config/master.sh"
-#!/bin/bash
 declare -A cfg
 
 cfg[ip]=127.0.0.1 # IP address to bind to - use 0.0.0.0 to bind to all
 
 cfg[http]=true # enables/disables listening on HTTP
 cfg[port]=1337 # HTTP port
+cfg[socat_only]=false
 
 cfg[namespace]='app'
 
@@ -19,7 +19,7 @@ cfg[index]='index.shs'
 cfg[autoindex]=true
 
 cfg[auth_required]=false
-cfg[auth_realm]="Laura is cute <3"
+cfg[auth_realm]="Luna is cute <3"
 
 cfg[ssl]=false # enables/disables listening on HTTPS
 cfg[ssl_port]=8443
@@ -180,7 +180,6 @@ else
 		fi
 		socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
 		echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
-		#ncat -v -l ${cfg[ip]} ${cfg[port]} -c ./src/server.sh -k 2>> /dev/null &
 	fi
 
 	if [[ ${cfg[ssl]} == true ]]; then
