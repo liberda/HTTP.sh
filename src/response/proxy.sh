@@ -16,4 +16,4 @@ while read line; do
 	fi
 done <<< "$headers"
 
-curl -v --http1.1 "$url" "$params" -D /dev/stdout | grep -aiv "Transfer-Encoding: chunked" | sed -E 's@Location: @Location: '"$proxy_url"'?'"${cfg[proxy_param]}"'=@'
+curl -v --http1.1 "$url" "$params" -D /dev/stdout | grep -aiv "Transfer-Encoding: chunked" | sed -E '/Location/s/\?/%3f/g;/Location/s/\&/%26/g;s@Location: @Location: '"$proxy_url"'?'"${cfg[proxy_param]}"'=@'
