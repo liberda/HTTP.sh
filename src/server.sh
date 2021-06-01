@@ -16,9 +16,11 @@ declare -A post_data # all POST params
 declare -A params # parsed router data
 
 r[status]=210 # Mommy always said that I was special
+r[req_headers]=''
 post_length=0
 
 while read -r param; do
+	r[req_headers]+="$param"
 	param_l="${param,,}" # lowercase
 	name=''
 	value=''
@@ -160,6 +162,8 @@ fi
 
 echo "${r[url]}" >&2
 
+# the app config gets loaded a second time to allow for path-specific config modification
+[[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
 
 if [[ "${cfg[auth_required]}" == true && "${r[authorized]}" != true ]]; then
 	echo "Auth failed." >> ${cfg[log_misc]}
@@ -212,9 +216,6 @@ if [[ "${r[post]}" == true && "${r[status]}" == 200 ]]; then
 		unset IFS
 	fi
 fi
-
-# the app config gets loaded a second time to allow for path-specific config modification
-[[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
 
 if [[ ${r[status]} == 210 && ${cfg[autoindex]} == true ]]; then
 	source "src/response/listing.sh"
