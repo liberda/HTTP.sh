@@ -79,6 +79,7 @@ while read -r param; do
 		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
 		data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
+			data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//' <<< "${r[url]}")"
 			IFS='&'
 			for i in $data; do
 				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
@@ -93,6 +94,7 @@ while read -r param; do
 		# below shamelessly copied from GET, should be moved to a function
 		data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
 		if [[ "$data" != "${r[url]}" ]]; then
+			data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//' <<< "${r[url]}")"
 			IFS='&'
 			for i in $data; do
 				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
