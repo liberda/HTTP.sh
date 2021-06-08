@@ -17,6 +17,7 @@ if [[ ${cfg[url]} ]]; then echo "<meta property='og:url' content='${cfg[url]}'>"
 #if [[ ${meta[og:image} ]]; then echo "<meta property='og:image' content='${meta[og:image]}'>"; fi
 if [[ ${meta[lang]} ]]; then echo "<meta property='og:locale' content='${meta[lang]}'>"; fi
 if [[ ${meta[description]} ]]; then echo "<meta property='og:description' content='${meta[description]}'>"; fi
+if [[ ${meta[unsafe]} ]]; then echo "${meta[unsafe]}"; fi
 
 echo "<style>
 		body {
