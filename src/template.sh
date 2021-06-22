@@ -7,8 +7,12 @@ function render() {
 	local -n ref=$1
 	local tmp=$(mktemp)
 	for key in ${!ref[@]}; do
-		local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
-		echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
+		if [[ "${ref[$key]}" != "" ]]; then
+			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
+			echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
+		else
+			echo 's/\{\{\.'"$key"'\}\}//g' >> "$tmp"
+		fi
 	done
 	template="$(sed -E -f "$tmp" <<< "$template")"
 	sed -E 's/�UwU�/\&/g' <<< "$template"
