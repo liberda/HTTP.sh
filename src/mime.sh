@@ -21,7 +21,7 @@ function get_mime() {
 		mimetype=""
 	elif [[ $file == *".css" ]]; then
 		mimetype="text/css"
-	elif [[ $mime == "text/"* ]]; then
+	elif [[ $mime == "text/"* && $mime != "text/xml" ]]; then
 		mimetype="text/plain"
 	else
 		mimetype="$mime"
