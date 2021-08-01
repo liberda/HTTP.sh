@@ -101,7 +101,7 @@ while read -r param; do
 			for i in $data; do
 				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
 				value="$(sed "s/$name\=//" <<< "$i")"
-				post_data[$name]="$value"
+				get_data[$name]="$value"
 			done
 		fi		
 	fi
@@ -174,8 +174,7 @@ if [[ "${cfg[proxy]}" == true ]]; then
 	r[status]=211
 fi
 
-if [[ "${r[post]}" == true && "${r[status]}" == 200 ]]; then
-
+if [[ "${r[post]}" == true && "${r[status]}" == 200 ]] || [[ "${r[post]}" == true && "${r[status]}" == 212 ]]; then
 	# This whole ordeal is here to prevent passing binary data as a variable.
 	# I could have done it as an array, but this solution works, and it's
 	# speedy enough so I don't care.
