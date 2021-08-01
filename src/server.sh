@@ -124,7 +124,7 @@ echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${ge
 
 if [[ ${r[status]} != 101 ]]; then
 	for (( i=0; i<${#route[@]}; i=i+3 )); do
-		if [[ "$(grep -Poh "^${route[$((i+1))]}" <<< "${r[url]}")" != "" ]]; then
+		if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url]}")" != "" ]] || [[ "${route[$((i+1))]}" == '/' && "${r[url]}" == '' ]]; then
 			r[status]=212
 			r[view]="${route[$((i+2))]}"
 			IFS='/'
