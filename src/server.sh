@@ -123,8 +123,8 @@ echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${ge
 [[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
 if [[ ${r[status]} != 101 ]]; then
+	clean_url="$(sed -E 's/\?.*//' <<< "${r[url]}")"
 	for (( i=0; i<${#route[@]}; i=i+3 )); do
-		clean_url="$(grep -Poh '.*?\?' <<< "${r[url]}")"
 		if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "$clean_url")" != "" ]] || [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "$clean_url/")" != "" ]]; then
 			r[status]=212
 			r[view]="${route[$((i+2))]}"
