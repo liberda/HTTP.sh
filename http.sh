@@ -179,7 +179,7 @@ if [[ ${cfg[socat_only]} == true ]]; then
 else
 	if [[ ${cfg[http]} == true ]]; then
 		# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
-		socket=$(mktemp -u /tmp/XXXX.socket)
+		socket=$(mktemp -u /tmp/socket.XXXXXX)
 		if [[ ${cfg[dbg]} == true ]]; then
 			ncat -l -U "$socket" -c src/server.sh -k &
 		else
