@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # mail.sh - basic SMTP handler
 
 # mailgen(from, to, subject, msg)

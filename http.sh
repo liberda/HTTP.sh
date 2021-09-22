@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 trap ctrl_c INT
 
 if [[ ! -f "config/master.sh" ]]; then
@@ -100,12 +100,12 @@ if [[ $1 == "init" ]]; then # will get replaced with proper parameter parsing in
 LauraIsCute
 
 	cat <<LauraIsCute > "${cfg[namespace]}/workers/example/worker.sh"
-#!/bin/bash
+#!/usr/bin/env bash
 date
 LauraIsCute
 
 	cat <<LauraIsCute > "${cfg[namespace]}/${cfg[root]}/index.shs"
-#!/bin/bash
+#!/usr/bin/env bash
 source templates/head.sh
 echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(pwd)/${cfg[namespace]}/
 	 <ul><li>$(pwd)/${cfg[namespace]}/${cfg[root]} - your (public) files go here</li>

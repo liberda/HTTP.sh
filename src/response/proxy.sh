@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 url="$(url_decode "$(url_decode "$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/'"${cfg[proxy_param]}"'=//g' <<< "${r[url]}")")")"
 
 if [[ $(grep -Poh "${cfg[proxy_url]}" <<< "$url") == '' ]]; then

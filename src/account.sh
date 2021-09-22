@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # account.sh - account and session mgmt
 
 

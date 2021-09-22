@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # misc.sh - miscellaneous functions
 
 # set_cookie(cookie_name, cookie_content)

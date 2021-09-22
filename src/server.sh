@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source config/master.sh
 source src/mime.sh
 source src/misc.sh

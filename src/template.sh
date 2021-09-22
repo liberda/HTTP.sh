@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # template.sh - basic templating engine
 
 # render(array, template_file)

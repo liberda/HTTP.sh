@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo '<!DOCTYPE html>
 <head>
 	<meta charset="utf-8">

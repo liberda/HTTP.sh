@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # mime.sh - determine what Content-Type should be passed on
 #

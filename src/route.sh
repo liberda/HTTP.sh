@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # route.sh - basic router stub
 
 # router(uri, path)
