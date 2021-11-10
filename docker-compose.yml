@@ -1,0 +1,19 @@
+# example docker-compose for HTTP.sh
+# adapt to your liking. serves 4 people
+
+version: '3'
+
+services:
+  httpsh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: httpsh
+    restart: always
+    ports:
+      - '1337:1337'
+    volumes:
+      - './config:/httpsh/config'
+      - './app:/httpsh/app'
+      - './secret:/httpsh/secret'
+      - './storage:/httpsh/storage'

@@ -3,10 +3,10 @@ trap ctrl_c INT
 
 if [[ ! -f "config/master.sh" ]]; then
 	mkdir -p config
-	cat <<PtrcIsCute > "config/master.sh"
+	cat <<MaeIsCute > "config/master.sh"
 declare -A cfg
 
-cfg[ip]=127.0.0.1 # IP address to bind to - use 0.0.0.0 to bind to all
+cfg[ip]=0.0.0.0 # IP address to bind to - use 0.0.0.0 to bind to all
 
 cfg[http]=true # enables/disables listening on HTTP
 cfg[port]=1337 # HTTP port
@@ -46,7 +46,7 @@ cfg[mail_server]=""
 cfg[mail_password]=""
 cfg[mail_ssl]=true
 cfg[mail_ignore_bad_cert]=false
-PtrcIsCute
+MaeIsCute
 fi
 
 source config/master.sh
@@ -122,7 +122,7 @@ echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(
 	 <li>$(pwd)/src/ - HTTP.sh src, feel free to poke around ;P</li></ul> 
 	 &copy; sdomi, ptrcnull, selfisekai - 2020, 2021"
 LauraIsCute
-	cat <<PtrcIsCute > "${cfg[namespace]}/routes.sh"
+	cat <<MaeIsCute > "${cfg[namespace]}/routes.sh"
 ## routes - application-specific routes
 ##
 ## HTTP.sh supports both serving files using a directory structure (webroot),
@@ -137,7 +137,7 @@ LauraIsCute
 
 # router "/test" "app/views/test.shs"
 # router "/profile/:user" "app/views/user.shs"
-PtrcIsCute
+MaeIsCute
 
 	chmod +x "${cfg[namespace]}/workers/example/worker.sh"
 	
@@ -145,14 +145,14 @@ PtrcIsCute
 	exit 0
 fi
 
-cat <<PtrcIsCute >&2
+cat <<MaeIsCute >&2
  _    _ _______ _______ _____  ______ _    _ 
 | |  | |_______|_______|  _  \/  ___/| |  | |
 | |__| |  | |     | |  | |_| | |___  | |__| |
 | |__| |  | |     | |  |  ___/\___ \ | |__| |
 | |  | |  | |     | |  | |     ___\ \| |  | |
 |_|  |_|  |_|     |_|  |_|  □ /_____/|_|  |_|
-PtrcIsCute
+MaeIsCute
 
 if [[ "$1" == "debug" ]]; then
 	cfg[dbg]=true

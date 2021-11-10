@@ -3,11 +3,13 @@ FROM alpine:3.14
 RUN apk update \
  && apk add sed xxd grep findutils file nmap-ncat socat jq bash file curl
 
-WORKDIR /app
+WORKDIR /httpsh
 COPY . .
 
 EXPOSE 1337
-VOLUME /app/config
-VOLUME /app/app
+VOLUME /httpsh/config
+VOLUME /httpsh/app
+VOLUME /httpsh/storage
+VOLUME /httpsh/secret
 
-ENTRYPOINT /app/http.sh
+CMD ["/httpsh/http.sh"]

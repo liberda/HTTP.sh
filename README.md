@@ -1,5 +1,5 @@
 # HTTP.sh
-Node.js, but `| sed s/Node/HTTP/;s/js/sh/`.
+Node.js, but `| sed 's/Node/HTTP/;s/js/sh/'`.
 
 HTTP.sh is (by far) the most extensible attempt at creating a web framework in Bash, and (AFAIK) the only one that's actively maintained. Although I strive for code quality, this is still rather experimental and may contain bugs.
 
@@ -20,6 +20,8 @@ If you're setting up HTTP.sh for an existing application:
 git clone https://git.sakamoto.pl/laudom/ocw/ app # example repo :P
 ./http.sh
 ```
+
+We also support Docker! Both a Dockerfile and an example docker-compose.yml are included for your convenience. Containerizing your webapp is as easy as `docker-compose up -d`
 
 ## Dependencies
 
