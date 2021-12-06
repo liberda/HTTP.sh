@@ -57,10 +57,10 @@ function ctrl_c() {
 	echo -e "Cleaned up, exitting.\nHave an awesome day!!"
 }
 
-if [[ ! -f "$(pwd)/http.sh" ]]; then
-		echo -e "Please run HTTP.sh inside it's designated directory\nRunning the script from arbitrary locations isn't supported."
-		exit 1
-fi	
+if [[ ! -f "$(pwd)/http.sh" ]]; then # packer-exclude
+		echo -e "Please run HTTP.sh inside it's designated directory\nRunning the script from arbitrary locations isn't supported." # packer-exclude
+		exit 1 # packer-exclude
+fi # packer-exclude
 
 
 for i in $(cat src/dependencies.required); do
