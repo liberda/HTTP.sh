@@ -1,12 +1,12 @@
 function __headers() {
 	if [[ "${cfg[unbuffered]}" != true ]]; then
-		if [[ "${r[headers]}" != *'Location'* ]]; then
-			printf "HTTP/1.0 200 OK\r\n"
+		if [[ "${r[headers]}" == *'Location'* ]]; then
+			printf "HTTP/1.0 302 aaaaa\r\n"	
 		else
-			printf "HTTP/1.0 302 aaaaa\r\n"
+			printf "HTTP/1.0 200 OK\r\n"
 		fi
 		[[ "${r[headers]}" != '' ]] && printf "${r[headers]}"
-		printf "${cfg[extra_headers]}\r\n\r\n"
+		printf "${cfg[extra_headers]}\r\n"
 	else
 		echo "uh oh - we're running unbuffered" > /dev/stderr
 	fi
@@ -15,6 +15,7 @@ function __headers() {
 		get_mime "${r[uri]}"
 		[[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
 	fi
+	printf "\r\n"
 }
 
 if [[ ${r[status]} == 212 ]]; then
@@ -54,7 +55,7 @@ elif [[ "${r[uri]}" =~ \.${cfg[extension]}$ ]]; then
 	rm $temp
 
 else
-	printf "\r\n"
+	__headers
 	if [[ "$mimetype" == "text/"* && "${cfg[encoding]}" != '' ]]; then
 		iconv "${r[uri]}" -f UTF-8 -t "${cfg[encoding]}"
 	else
