@@ -181,9 +181,9 @@ else
 		# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
 		socket=$(mktemp -u /tmp/socket.XXXXXX)
 		if [[ ${cfg[dbg]} == true ]]; then
-			ncat -l -U "$socket" -c src/server.sh -k &
+			ncat -i 600 -l -U "$socket" -c src/server.sh -k &
 		else
-			ncat -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+			ncat -i 600 -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
 		fi
 		socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
 		echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
@@ -192,9 +192,9 @@ else
 	if [[ ${cfg[ssl]} == true ]]; then
 		echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
 		if [[ ${cfg[dbg]} == true ]]; then
-			ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") &
+			ncat -i 600 -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") &
 		else
-			ncat -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null &
+			ncat -i 600 -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null &
 		fi
 	fi
 fi
