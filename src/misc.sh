@@ -55,3 +55,9 @@ function url_encode() {
 function url_decode() {
 	echo -ne "$(sed -E 's/%[0-1][0-9a-f]//g;s/%/\\x/g' <<< "$1")"
 }
+
+# bogus function!
+# this is here to prevent "command not found" errors in debug mode
+function worker_add() {
+	:
+}
