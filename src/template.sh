@@ -8,31 +8,47 @@ function render() {
 	local tmp=$(mktemp)
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
-			local subtemplate=$(mktemp)
-			grep "start $key" -A99999 | grep "end $key" -B99999 > "$subtemplate"
-			local -n item_array=${ref[$key]}
-			echo 's/{{start '"$key"'}}.*{{end '"$key"'}}/{{'"$key"'}}/' >> "$tmp"
-			for (( i=0; i<${#item_array}; i++ )); do
-				nested_get item_array $i
-				for meow in ${!res[@]}; do
-					local -n nyaa=${res[$meow]}
-					# todo: unhtml_encode this?
-					local value="$(html_encode "$(render nyaa "$subtemplate")" | sed -E 's/\&/�UwU�/g')"
-					echo 's/{{'"${res[$meow]}"'}}/'"$value"'/' >> "$tmp"
-					
+			local value=''
+			subtemplate=$(mktemp)
+			subtemplate_tmp=$(mktemp)
+			echo "subtemplate: $subtemplate" > /dev/stderr
+			echo "subtemplate_tmp: $subtemplate_tmp" > /dev/stderr
+			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 > "$subtemplate"
+
+			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
+
+			local -n asdf=${ref[$key]}
+			echo "asdf ${asdf[@]}" > /dev/stderr
+
+			for j in ${!asdf[@]}; do
+				local -n fdsa=_${asdf[$j]}
+
+				for i in ${!fdsa[@]}; do
+					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02'';' | tr -d '\n' >> "$subtemplate_tmp"
 				done
+
+				echo 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
+				echo 's'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
+				
+				value+="$(cat "$subtemplate" | tr -d '\n' | sed -E -f "$subtemplate_tmp" | tr $'\01' '\n' | sed 's/'$'\01''/\n/g')"
+				echo "eeeee $value" > /dev/stderr
+				rm "$subtemplate_tmp"
 			done
-			echo 's/\{\{'"$key"'\}\}/'"$value"'/g' >> "$tmp"
+
+
+			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
+			cat "$tmp" > /dev/stderr
 			rm "$subtemplate"
 		elif [[ "${ref[$key]}" != "" ]]; then
 			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
-			echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
+			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 		else
-			echo 's/\{\{\.'"$key"'\}\}//g' >> "$tmp"
+			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'$'\02'';' >> "$tmp"
 		fi
 	done
-	
-	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "$tmp" | tr $'\01' '\n')"
+
+	cat "$tmp" | tr -d '\n' > "${tmp}_"
+	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
 	sed -E 's/�UwU�/\&/g' <<< "$template"
 	rm "$tmp"
 }
@@ -54,6 +70,7 @@ function render_unsafe() {
 		else
 			local value="$(xxd -ps <<< "${ref[$key]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
 			echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
+		fi
 	done
 
 	sed -E -f "$tmp" <<< "$template"
