@@ -11,33 +11,27 @@ function render() {
 			local value=''
 			subtemplate=$(mktemp)
 			subtemplate_tmp=$(mktemp)
-			echo "subtemplate: $subtemplate" > /dev/stderr
-			echo "subtemplate_tmp: $subtemplate_tmp" > /dev/stderr
-			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 > "$subtemplate"
+			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
 
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
 			local -n asdf=${ref[$key]}
-			echo "asdf ${asdf[@]}" > /dev/stderr
 
 			for j in ${!asdf[@]}; do
 				local -n fdsa=_${asdf[$j]}
 
 				for i in ${!fdsa[@]}; do
-					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02'';' | tr -d '\n' >> "$subtemplate_tmp"
+					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02'';' | tr '\n' $'\01' | sed 's/'$'\02'';'$'\01''/'$'\02'';/g' >> "$subtemplate_tmp"
 				done
 
 				echo 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
 				echo 's'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
 				
-				value+="$(cat "$subtemplate" | tr -d '\n' | sed -E -f "$subtemplate_tmp" | tr $'\01' '\n' | sed 's/'$'\01''/\n/g')"
-				echo "eeeee $value" > /dev/stderr
+				value+="$(cat "$subtemplate" | tr '\n' $'\01' | sed -E -f "$subtemplate_tmp" | tr $'\01' '\n')"
 				rm "$subtemplate_tmp"
 			done
 
-
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
-			cat "$tmp" > /dev/stderr
 			rm "$subtemplate"
 		elif [[ "${ref[$key]}" != "" ]]; then
 			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
@@ -47,7 +41,7 @@ function render() {
 		fi
 	done
 
-	cat "$tmp" | tr -d '\n' > "${tmp}_"
+	cat "$tmp" | tr '\n' $'\01' | sed 's/'$'\02'';'$'\01''/'$'\02'';/g' > "${tmp}_"
 	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
 	sed -E 's/�UwU�/\&/g' <<< "$template"
 	rm "$tmp"
