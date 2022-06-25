@@ -21,7 +21,7 @@ function render() {
 				local -n fdsa=_${asdf[$j]}
 
 				for i in ${!fdsa[@]}; do
-					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02'';' | tr '\n' $'\01' | sed 's/'$'\02'';'$'\01''/'$'\02'';/g' >> "$subtemplate_tmp"
+					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02''g;' | tr '\n' $'\01' | sed 's/'$'\02'';'$'\01''/'$'\02'';/g' >> "$subtemplate_tmp"
 				done
 
 				echo 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
@@ -35,9 +35,9 @@ function render() {
 			rm "$subtemplate"
 		elif [[ "${ref[$key]}" != "" ]]; then
 			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
-			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
+			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
 		else
-			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'$'\02'';' >> "$tmp"
+			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'$'\02''g;' >> "$tmp"
 		fi
 	done
 
