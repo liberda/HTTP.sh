@@ -21,18 +21,18 @@ function render() {
 				local -n fdsa=_${asdf[$j]}
 
 				for i in ${!fdsa[@]}; do
-					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02''g;' | tr '\n' $'\01' | sed 's/'$'\02'';'$'\01''/'$'\02'';/g' >> "$subtemplate_tmp"
+					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02''g;' | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' >> "$subtemplate_tmp"
 				done
 
 				echo 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
 				echo 's'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
 				
 				value+="$(cat "$subtemplate" | tr '\n' $'\01' | sed -E -f "$subtemplate_tmp" | tr $'\01' '\n')"
-				rm "$subtemplate_tmp"
+			#	rm "$subtemplate_tmp"
 			done
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
-			rm "$subtemplate"
+			#rm "$subtemplate"
 		elif [[ "${ref[$key]}" != "" ]]; then
 			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
@@ -41,10 +41,10 @@ function render() {
 		fi
 	done
 
-	cat "$tmp" | tr '\n' $'\01' | sed 's/'$'\02'';'$'\01''/'$'\02'';/g' > "${tmp}_"
+	cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
 	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
 	sed -E 's/�UwU�/\&/g' <<< "$template"
-	rm "$tmp"
+	#rm "$tmp"
 }
 
 # render_unsafe(array, template_file)
