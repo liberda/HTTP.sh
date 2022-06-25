@@ -3,7 +3,7 @@
 
 # render(array, template_file)
 function render() {
-	local template="$(cat "$2")"
+	local template="$(cat "$2" | sed 's/\&/�UwU�/g')"
 	local -n ref=$1
 	local tmp=$(mktemp)
 	for key in ${!ref[@]}; do
@@ -11,7 +11,7 @@ function render() {
 			local value=''
 			subtemplate=$(mktemp)
 			subtemplate_tmp=$(mktemp)
-			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
+			echo "$template" | sed 's/\&/�UwU�/g' | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
 
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
@@ -93,7 +93,6 @@ function nested_add() {
 	for i in ${!nested_ref[@]}; do
 		declare -g -A _$nested_id[$i]="${nested_ref[$i]}"
 	done
-	declare -p _$nested_id > /dev/stderr
 	
 	local -n ref=$1
 	ref+=("$nested_id")
