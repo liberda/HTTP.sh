@@ -3,7 +3,7 @@
 
 # render(array, template_file)
 function render() {
-	local template="$(cat "$2" | sed 's/\&/�UwU�/g')"
+	local template="$(cat "$2" | tr -d $'\01'$'\02' | sed 's/\&/�UwU�/g')"
 	local -n ref=$1
 	local tmp=$(mktemp)
 	for key in ${!ref[@]}; do
@@ -11,7 +11,7 @@ function render() {
 			local value=''
 			subtemplate=$(mktemp)
 			subtemplate_tmp=$(mktemp)
-			echo "$template" | sed 's/\&/�UwU�/g' | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
+			echo "$template" | sed 's/\&/�UwU�/g' | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr -d $'\01'$'\02' | tr '\n' $'\01' > "$subtemplate"
 
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
@@ -28,11 +28,11 @@ function render() {
 				echo 's'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
 				
 				value+="$(cat "$subtemplate" | tr '\n' $'\01' | sed -E -f "$subtemplate_tmp" | tr $'\01' '\n')"
-			#	rm "$subtemplate_tmp"
+				rm "$subtemplate_tmp"
 			done
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
-			#rm "$subtemplate"
+			rm "$subtemplate"
 		elif [[ "${ref[$key]}" != "" ]]; then
 			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
@@ -44,7 +44,7 @@ function render() {
 	cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
 	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
 	sed -E 's/�UwU�/\&/g' <<< "$template"
-	#rm "$tmp"
+	rm "$tmp"
 }
 
 # render_unsafe(array, template_file)
