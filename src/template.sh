@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # template.sh - basic templating engine
 
+# nightmare fuel
 # render(array, template_file)
 function render() {
 	local template="$(cat "$2" | tr -d $'\01'$'\02' | sed 's/\&/�UwU�/g')"
@@ -16,12 +17,16 @@ function render() {
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
 			local -n asdf=${ref[$key]}
-
+			value=''
+			
 			for j in ${!asdf[@]}; do
 				local -n fdsa=_${asdf[$j]}
 
-				for i in ${!fdsa[@]}; do
-					echo 's'$'\02''\{\{.'"$i"'\}\}'$'\02'''"${fdsa[$i]}"''$'\02''g;' | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' >> "$subtemplate_tmp"
+				# TODO: somewhere here, it should recurse. it does not.
+				# recursion is fun! let's do recursion! 
+
+				for _i in ${!fdsa[@]}; do
+					echo 's'$'\02''\{\{\.'"$_i"'\}\}'$'\02'''"${fdsa[$_i]}"''$'\02''g;' | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' >> "$subtemplate_tmp"
 				done
 
 				echo 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
@@ -33,6 +38,16 @@ function render() {
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 			rm "$subtemplate"
+		elif [[ "$key" == "@"* && "${ref[$key]}" != '' ]]; then
+			local value="$(sed -E 's/\&/�UwU�/g' <<< "${ref[$key]}")"
+			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
+		elif [[ "$key" == '?'* ]]; then
+			_key="\\?${key/?/}"
+
+			subtemplate=$(mktemp)
+			echo 's'$'\02''\{\{start '"$_key"'\}\}(.*)\{\{end '"$_key"'\}\}'$'\02''\{\{(\1)\}\}'$'\02'';' >> "$subtemplate"
+			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
+
 		elif [[ "${ref[$key]}" != "" ]]; then
 			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
@@ -42,6 +57,8 @@ function render() {
 	done
 
 	cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
+
+	echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}.*\{\{end \?(\1)\}\}//g' >> "${tmp}_"
 	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
 	sed -E 's/�UwU�/\&/g' <<< "$template"
 	rm "$tmp"
@@ -57,12 +74,12 @@ function render_unsafe() {
 			# grep "start _test" -A99999 | grep "end _test" -B99999
 			local -n item_array=${ref[$key]}
 			local value
-			for ((i = 0; i < ${#item_array[@]}; i++)); do
-				value+="$(xxd -ps <<< "${item_array[$i]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
+			for ((_i = 0; _i < ${#item_array[@]}; _i++)); do
+				value+="$(xxd -p <<< "${item_array[$_i]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
 			done
 			echo 's/\{\{'"$key"'\}\}/'"$value"'/g' >> "$tmp"
 		else
-			local value="$(xxd -ps <<< "${ref[$key]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
+			local value="$(xxd -p <<< "${ref[$key]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
 			echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
 		fi
 	done
@@ -90,8 +107,8 @@ function nested_add() {
 	declare -g -A _$nested_id
 	
 	# poor man's array copy
-	for i in ${!nested_ref[@]}; do
-		declare -g -A _$nested_id[$i]="${nested_ref[$i]}"
+	for k in ${!nested_ref[@]}; do
+		declare -g -A _$nested_id[$k]="${nested_ref[$k]}"
 	done
 	
 	local -n ref=$1
