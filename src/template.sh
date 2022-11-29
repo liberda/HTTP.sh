@@ -2,39 +2,37 @@
 # template.sh - basic templating engine
 
 # nightmare fuel
-# render(array, template_file)
+# render(array, template_file, recurse)
 function render() {
-	local template="$(cat "$2" | tr -d $'\01'$'\02' | sed 's/\&/�UwU�/g')"
+	if [[ "$3" != true ]]; then
+		local template="$(cat "$2" | tr -d $'\01'$'\02' | sed 's/\&/�UwU�/g')"
+	else
+		local template="$(cat "$2")"
+	fi
 	local -n ref=$1
 	local tmp=$(mktemp)
+
+	local key
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
-			local value=''
-			subtemplate=$(mktemp)
-			subtemplate_tmp=$(mktemp)
-			echo "$template" | sed 's/\&/�UwU�/g' | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr -d $'\01'$'\02' | tr '\n' $'\01' > "$subtemplate"
+			local subtemplate=$(mktemp)
+			local subtemplate_tmp=$(mktemp)
+			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
 
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
 			local -n asdf=${ref[$key]}
-			value=''
-			
+
+			local j
+			local value=''
 			for j in ${!asdf[@]}; do
 				local -n fdsa=_${asdf[$j]}
 
-				# TODO: somewhere here, it should recurse. it does not.
-				# recursion is fun! let's do recursion! 
+				value+="$(render fdsa "$subtemplate" true | sed -E 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02'';s'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02')"
 
-				for _i in ${!fdsa[@]}; do
-					echo 's'$'\02''\{\{\.'"$_i"'\}\}'$'\02'''"${fdsa[$_i]}"''$'\02''g;' | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' >> "$subtemplate_tmp"
-				done
-
-				echo 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
-				echo 's'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' >> "$subtemplate_tmp"
-				
-				value+="$(cat "$subtemplate" | tr '\n' $'\01' | sed -E -f "$subtemplate_tmp" | tr $'\01' '\n')"
 				rm "$subtemplate_tmp"
 			done
+			
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 			rm "$subtemplate"
@@ -42,26 +40,36 @@ function render() {
 			local value="$(sed -E 's/\&/�UwU�/g' <<< "${ref[$key]}")"
 			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
 		elif [[ "$key" == '?'* ]]; then
-			_key="\\?${key/?/}"
+			local _key="\\?${key/?/}"
 
-			subtemplate=$(mktemp)
-			echo 's'$'\02''\{\{start '"$_key"'\}\}(.*)\{\{end '"$_key"'\}\}'$'\02''\{\{(\1)\}\}'$'\02'';' >> "$subtemplate"
+			local subtemplate=$(mktemp)
+			echo 's'$'\02''\{\{start '"$_key"'\}\}(.*)\{\{end '"$_key"'\}\}'$'\02''\1'$'\02'';' >> "$subtemplate"
 			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
 
 		elif [[ "${ref[$key]}" != "" ]]; then
-			local value="$(html_encode "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
+			echo "VALUE: ${ref[$key]}" > /dev/stderr
+			if [[ "$3" != true ]]; then
+				local value="$(echo "${ref[$key]}" | html_encode | sed -E 's/\&/�UwU�/g')"
+			else
+				local value="$(echo "${ref[$key]}" | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
+			fi
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
 		else
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'$'\02''g;' >> "$tmp"
 		fi
 	done
 
-	cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
+	if [[ "$3" != true ]]; then # are we recursing?
+		cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
 
-	echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}.*\{\{end \?(\1)\}\}//g' >> "${tmp}_"
-	template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
-	sed -E 's/�UwU�/\&/g' <<< "$template"
-	rm "$tmp"
+		echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}.*\{\{end \?(\1)\}\}//g' >> "${tmp}_"
+		template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
+		sed -E 's/�UwU�/\&/g' <<< "$template"
+		rm "$tmp" "${tmp}_"
+	else
+		tr '\n' $'\01' <<< "$template" | sed -E -f "$tmp" | tr $'\01' '\n'
+		rm "$tmp"
+	fi
 }
 
 # render_unsafe(array, template_file)
