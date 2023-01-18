@@ -22,7 +22,6 @@ function render() {
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
 			local -n asdf=${ref[$key]}
-
 			local j
 			local value=''
 			for j in ${!asdf[@]}; do
@@ -32,7 +31,6 @@ function render() {
 
 				rm "$subtemplate_tmp"
 			done
-			
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 			rm "$subtemplate"
@@ -43,15 +41,15 @@ function render() {
 			local _key="\\?${key/?/}"
 
 			local subtemplate=$(mktemp)
-			echo 's'$'\02''\{\{start '"$_key"'\}\}(.*)\{\{end '"$_key"'\}\}'$'\02''\1'$'\02'';' >> "$subtemplate"
+			echo 's'$'\02''\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'$'\02''\2'$'\02'';' >> "$subtemplate"
 			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
 
 		elif [[ "${ref[$key]}" != "" ]]; then
 			echo "VALUE: ${ref[$key]}" > /dev/stderr
 			if [[ "$3" != true ]]; then
-				local value="$(echo "${ref[$key]}" | html_encode | sed -E 's/\&/�UwU�/g')"
+				local value="$(html_encode <<< "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
 			else
-				local value="$(echo "${ref[$key]}" | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
+				local value="$(sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' <<< "${ref[$key]}" | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
 		else
@@ -61,8 +59,8 @@ function render() {
 
 	if [[ "$3" != true ]]; then # are we recursing?
 		cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
-
-		echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}.*\{\{end \?(\1)\}\}//g' >> "${tmp}_"
+		
+		echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g' >> "${tmp}_"
 		template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
 		sed -E 's/�UwU�/\&/g' <<< "$template"
 		rm "$tmp" "${tmp}_"
