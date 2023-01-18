@@ -41,7 +41,7 @@ function render() {
 			local _key="\\?${key/?/}"
 
 			local subtemplate=$(mktemp)
-			echo 's'$'\02''\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'$'\02''\2'$'\02'';' >> "$subtemplate"
+			echo 's'$'\02''\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'$'\02''\2\3'$'\02'';' >> "$subtemplate"
 			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
 
 		elif [[ "${ref[$key]}" != "" ]]; then
