@@ -5,9 +5,9 @@
 # render(array, template_file, recurse)
 function render() {
 	if [[ "$3" != true ]]; then
-		local template="$(cat "$2" | tr -d $'\01'$'\02' | sed 's/\&/�UwU�/g')"
+		local template="$(tr -d $'\01'$'\02' < "$2" | sed 's/\&/�UwU�/g')"
 	else
-		local template="$(cat "$2")"
+		local template="$(cat "$2" | sed -E 's/\\/\\\\/g')"
 	fi
 	local -n ref=$1
 	local tmp=$(mktemp)
@@ -16,7 +16,6 @@ function render() {
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
 			local subtemplate=$(mktemp)
-			local subtemplate_tmp=$(mktemp)
 			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
 
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
@@ -27,10 +26,9 @@ function render() {
 			for j in ${!asdf[@]}; do
 				local -n fdsa=_${asdf[$j]}
 
-				value+="$(render fdsa "$subtemplate" true | sed -E 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02'';s'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02')"
-
-				rm "$subtemplate_tmp"
+				value+="$(render fdsa "$subtemplate" true)"
 			done
+			value="$(sed -E 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02'';s'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' <<< "$value")"
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 			rm "$subtemplate"
@@ -44,6 +42,7 @@ function render() {
 			echo 's'$'\02''\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'$'\02''\2\3'$'\02'';' >> "$subtemplate"
 			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
 
+			rm "$subtemplate"
 		elif [[ "${ref[$key]}" != "" ]]; then
 			echo "VALUE: ${ref[$key]}" > /dev/stderr
 			if [[ "$3" != true ]]; then
