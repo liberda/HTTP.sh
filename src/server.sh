@@ -175,7 +175,7 @@ if [[ "${cfg[proxy]}" == true ]]; then
 	r[status]=211
 fi
 
-if [[ "{cfg[enable_multipart]}" == true ]] && [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 212 ]]; then
+if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 212 ]]; then
 	# This whole ordeal is here to prevent passing binary data as a variable.
 	# I could have done it as an array, but this solution works, and it's
 	# speedy enough so I don't care.
