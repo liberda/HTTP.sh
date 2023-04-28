@@ -3,7 +3,7 @@ trap ctrl_c INT
 
 if [[ ! -f "config/master.sh" ]]; then
 	mkdir -p config
-	cat <<MaeIsCute > "config/master.sh"
+	cat <<EOF > "config/master.sh"
 declare -A cfg
 
 cfg[ip]=0.0.0.0 # IP address to bind to - use 0.0.0.0 to bind to all
@@ -19,7 +19,7 @@ cfg[index]='index.shs'
 cfg[autoindex]=true
 
 cfg[auth_required]=false
-cfg[auth_realm]="Luna is cute <3"
+cfg[auth_realm]="asdf"
 
 cfg[ssl]=false # enables/disables listening on HTTPS
 cfg[ssl_port]=8443
@@ -46,7 +46,7 @@ cfg[mail_server]=""
 cfg[mail_password]=""
 cfg[mail_ssl]=true
 cfg[mail_ignore_bad_cert]=false
-MaeIsCute
+EOF
 fi
 
 source config/master.sh
@@ -89,22 +89,24 @@ if [[ $error == true ]]; then
 fi
 
 if [[ $1 == "init" ]]; then # will get replaced with proper parameter parsing in 1.0
+	#set -e
+	
 	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates"
 	touch "${cfg[namespace]}/config.sh" "${cfg[namespace]}/workers/example/control"
-	cat <<LauraIsCute > "${cfg[namespace]}/config.sh"
+	cat <<EOF > "${cfg[namespace]}/config.sh"
 ## app config
 ## your application-specific config goes here!
 
-
 # worker_add example 5
-LauraIsCute
+cfg[enable_multipart]=false # by default, uploading files is disabled
+EOF
 
-	cat <<LauraIsCute > "${cfg[namespace]}/workers/example/worker.sh"
+	cat <<EOF > "${cfg[namespace]}/workers/example/worker.sh"
 #!/usr/bin/env bash
 date
-LauraIsCute
+EOF
 
-	cat <<LauraIsCute > "${cfg[namespace]}/${cfg[root]}/index.shs"
+	cat <<EOF > "${cfg[namespace]}/${cfg[root]}/index.shs"
 #!/usr/bin/env bash
 source templates/head.sh
 echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(pwd)/${cfg[namespace]}/
@@ -119,40 +121,39 @@ echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(
 	 <li>$(pwd)/config/<hostname> - config loaded if a request is made to a specific hostname</li>
 	 <li>$(pwd)/storage/ - directory for storing all and any data your app may produce</li>
 	 <li>$(pwd)/secret/ - user accounts and other secret tokens live here</li>
-	 <li>$(pwd)/src/ - HTTP.sh src, feel free to poke around ;P</li></ul> 
-	 &copy; sdomi, ptrcnull, selfisekai - 2020, 2021"
-LauraIsCute
-	cat <<MaeIsCute > "${cfg[namespace]}/routes.sh"
+	 <li>$(pwd)/src/ - HTTP.sh src, feel free to poke around ;P</li></ul>"
+EOF
+	cat <<EOF > "${cfg[namespace]}/routes.sh"
 ## routes - application-specific routes
 ##
 ## HTTP.sh supports both serving files using a directory structure (webroot),
 ## and using routes. The latter may come in handy if you want to create nicer
 ## paths, e.g.
 ##
-## (webroot) https://example.com/profile.shs?name=ptrcnull
+## (webroot) https://example.com/profile.shs?name=asdf
 ## ... may become ...
-## (routes)  https://example.com/profile/ptrcnull
+## (routes)  https://example.com/profile/asdf
 ##
 ## To set up routes, define rules in this file (see below for examples)
 
 # router "/test" "app/views/test.shs"
 # router "/profile/:user" "app/views/user.shs"
-MaeIsCute
+EOF
 
 	chmod +x "${cfg[namespace]}/workers/example/worker.sh"
 	
-	echo -e "Success..?\nTry running ./http.sh now"
+	echo -e "Success..?\nTry running \`./http.sh\` now"
 	exit 0
 fi
 
-cat <<MaeIsCute >&2
+cat <<EOF >&2
  _    _ _______ _______ _____  ______ _    _ 
 | |  | |_______|_______|  _  \/  ___/| |  | |
 | |__| |  | |     | |  | |_| | |___  | |__| |
 | |__| |  | |     | |  |  ___/\___ \ | |__| |
 | |  | |  | |     | |  | |     ___\ \| |  | |
 |_|  |_|  |_|     |_|  |_|  □ /_____/|_|  |_|
-MaeIsCute
+EOF
 
 if [[ "$1" == "debug" ]]; then
 	cfg[dbg]=true
@@ -181,9 +182,16 @@ else
 		# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
 		socket=$(mktemp -u /tmp/socket.XXXXXX)
 		if [[ ${cfg[dbg]} == true ]]; then
-			ncat -i 600s -l -U "$socket" -c src/server.sh -k &
+			# ncat with the "timeout" (-i) option has a bug which forces it
+			# to quit after the first time-outed connection, ignoring the
+			# "broker" (-k) mode. This is a workaround for this. 
+			while true; do
+				ncat -i 600s -l -U "$socket" -c src/server.sh -k
+			done &
 		else
-			ncat -i 600s -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+			while true; do
+				ncat -i 600s -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+			done &
 		fi
 		socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
 		echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
@@ -192,9 +200,13 @@ else
 	if [[ ${cfg[ssl]} == true ]]; then
 		echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
 		if [[ ${cfg[dbg]} == true ]]; then
-			ncat -i 600s -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") &
+			while true; do
+				ncat -i 600s -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}")
+			done &
 		else
-			ncat -i 600s -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null &
+			while true; do
+				ncat -i 600s -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null
+			done &
 		fi
 	fi
 fi
