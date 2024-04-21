@@ -84,8 +84,8 @@ while read -r param; do
 			data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//' <<< "${r[url]}")"
 			IFS='&'
 			for i in $data; do
-				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
-				value="$(sed "s/$name\=//" <<< "$i")"
+				name="${i/=*/}"
+				value="${i/*=/}"
 				get_data[$name]="$value"
 			done
 		fi
@@ -99,8 +99,8 @@ while read -r param; do
 			data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//' <<< "${r[url]}")"
 			IFS='&'
 			for i in $data; do
-				name="$(sed -E 's/\=(.*)$//' <<< "$i")"
-				value="$(sed "s/$name\=//" <<< "$i")"
+				name="${i/=*/}"
+				value="${i/*=/}"
 				get_data[$name]="$value"
 			done
 		fi		
@@ -209,8 +209,8 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		
 		IFS='&'
 		for i in $(tr -d '\n' <<< "$data"); do
-			name="$(sed -E 's/\=(.*)$//' <<< "$i")"
-			param="$(sed "s/$name\=//" <<< "$i")"
+			name="${i/=*/}"
+			param="${i/*=/}"
 			post_data[$name]="$param"
 		done
 		unset IFS
