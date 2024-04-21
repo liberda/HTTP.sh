@@ -133,7 +133,7 @@ if [[ ${r[status]} != 101 ]]; then
 			url_=(${r[url]})
 			unset IFS
 			for (( j=0; j<${#url[@]}; j++ )); do
-				if [[ ${url_[$j]} != '' ]]; then
+				if [[ ${url_[$j]} != '' && ${url[$j]} == ":"* ]]; then
 					params[$(sed 's/://' <<< "${url[$j]}")]="${url_[$j]}"
 				fi
 			done
