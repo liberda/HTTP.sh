@@ -30,10 +30,10 @@ while read -r param; do
 	if [[ "$param_l" == $'\015' ]]; then
 		break
 		
-	elif [[ "$param_l" == *"content-length:"* ]]; then
+	elif [[ "$param_l" == "content-length:"* ]]; then
 		r[content_length]="$(sed 's/Content-Length: //i;s/\r//' <<< "$param")"
 
-	elif [[ "$param_l" == *"content-type:"* ]]; then
+	elif [[ "$param_l" == "content-type:"* ]]; then
 		r[content_type]="$(sed 's/Content-Type: //i;s/\r//' <<< "$param")"
 		if [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
 			tmpdir=$(mktemp -d)
@@ -42,7 +42,7 @@ while read -r param; do
 			r[content_boundary]="$(sed -E 's/(.*)boundary=//i;s/\r//;s/ //' <<< "${r[content_type]}")"
 		fi
 		
-	elif [[ "$param_l" == *"host:"* ]]; then
+	elif [[ "$param_l" == "host:"* ]]; then
 		r[host]="$(sed 's/Host: //i;s/\r//;s/\\//g' <<< "$param")"
 		r[host_portless]="$(sed -E 's/:(.*)$//' <<< "${r[host]}")"
 		if [[ -f "config/$(basename -- ${r[host]})" ]]; then
@@ -51,22 +51,22 @@ while read -r param; do
 			source "config/$(basename -- ${r[host_portless]})"
 		fi
 
-	elif [[ "$param_l" == *"user-agent:"* ]]; then
+	elif [[ "$param_l" == "user-agent:"* ]]; then
 		r[user_agent]="$(sed 's/User-Agent: //i;s/\r//;s/\\//g' <<< "$param")"
 		
-	elif [[ "$param_l" == *"upgrade:"* && $(sed 's/Upgrade: //i;s/\r//' <<< "$param") == "websocket" ]]; then
+	elif [[ "$param_l" == "upgrade:"* && $(sed 's/Upgrade: //i;s/\r//' <<< "$param") == "websocket" ]]; then
 		r[status]=101
 		
-	elif [[ "$param_l" == *"sec-websocket-key:"* ]]; then
+	elif [[ "$param_l" == "sec-websocket-key:"* ]]; then
 		r[websocket_key]="$(sed 's/Sec-WebSocket-Key: //i;s/\r//' <<< "$param")"
 		
-	elif [[ "$param_l" == *"authorization: basic"* ]]; then
+	elif [[ "$param_l" == "authorization: basic"* ]]; then
 		login_simple "$param"
 		
-	elif [[ "$param_l" == *"authorization: bearer"* ]]; then
+	elif [[ "$param_l" == "authorization: bearer"* ]]; then
 		r[authorization]="$(sed 's/Authorization: Bearer //i;s/\r//' <<< "$param")"
 
-	elif [[ "$param_l" == *"cookie: "* ]]; then
+	elif [[ "$param_l" == "cookie: "* ]]; then
 		IFS=';'
 		for i in $(IFS=' '; echo "$param" | sed -E 's/Cookie: //i;;s/%/\\x/g'); do
 			name="$((grep -Poh "[^ ].*?(?==)" | head -1) <<< $i)"
@@ -74,7 +74,7 @@ while read -r param; do
 			cookies[$name]="$(echo -e $value)"
 		done
 
-	elif [[ "$param_l" == *"range: bytes="* ]]; then
+	elif [[ "$param_l" == "range: bytes="* ]]; then
 		r[range]="$(sed 's/Range: bytes=//;s/\r//' <<< "$param")"
 		
 	elif [[ "$param" == *"GET "* ]]; then
