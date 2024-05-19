@@ -130,7 +130,7 @@ if [[ ${r[status]} != 101 ]]; then
 			r[view]="${route[$((i+2))]}"
 			IFS='/'
 			url=(${route[$i]})
-			url_=(${r[url]})
+			url_=($(cut -d '?' -f 1 <<< "${r[url]}"))
 			unset IFS
 			for (( j=0; j<${#url[@]}; j++ )); do
 				if [[ ${url_[$j]} != '' && ${url[$j]} == ":"* ]]; then
