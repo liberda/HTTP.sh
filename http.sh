@@ -190,7 +190,7 @@ else
 			done &
 		else
 			while true; do
-				ncat -i 600s -l -U "$socket" -c src/server.sh -k 2>> /dev/null &
+				ncat -i 600s -l -U "$socket" -c src/server.sh -k 2>> /dev/null
 			done &
 		fi
 		socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
