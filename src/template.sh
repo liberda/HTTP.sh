@@ -12,9 +12,30 @@ function render() {
 	local -n ref=$1
 	local tmp=$(mktemp)
 
+	# hack below!
+	# this whole code iterates over an array we control, but I want to add
+	# template includes. Hence, we have to pre-parse the template to
+	# find all of our include statements and add them to the roundup.
+
+	while read elem; do
+		ref[#$elem]=
+	done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
+
 	local key
+	IFS=$'\n'
 	for key in ${!ref[@]}; do
-		if [[ "$key" == "_"* ]]; then # iter mode
+		if [[ "$key" == "#"* ]]; then # include mode
+			local file="${key/\#/}"
+
+			# below check prevents the loop loading itself as a template.
+			# this is possibly not enough to prevent all recursions, but
+			# i see it as a last-ditch measure. so it'll do here.
+			if [[ "$file" == "$2" ]]; then
+				echo 's'$'\02''\{\{'"\\$key"'\}\}'$'\02''I cowardly refuse to endlessly recurse\!'$'\02''g;' >> "$tmp"
+			elif [[ -f "$file" ]]; then
+				echo 's'$'\02''\{\{'"\\$key"'\}\}'$'\02'"$(tr -d $'\01'$'\02' < "$file" | sed 's/\&/�UwU�/g')"$'\02''g;' >> "$tmp"
+			fi
+		elif [[ "$key" == "_"* ]]; then # iter mode
 			local subtemplate=$(mktemp)
 			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
 
@@ -34,7 +55,7 @@ function render() {
 			rm "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref[$key]}" != '' ]]; then
 			local value="$(sed -E 's/\&/�UwU�/g' <<< "${ref[$key]}")"
-			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
+			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
 
@@ -55,6 +76,7 @@ function render() {
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'$'\02''g;' >> "$tmp"
 		fi
 	done
+	unset IFS
 
 	if [[ "$3" != true ]]; then # are we recursing?
 		cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
