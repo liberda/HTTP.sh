@@ -2,3 +2,4 @@ sha1sum
 sha256sum
 curl
 iconv
+argon2

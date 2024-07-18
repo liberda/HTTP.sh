@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # account.sh - account and session mgmt
 
-
 # register(username, password)
 function register() {
 	local username=$(echo -ne $(sed -E "s/ /_/g;s/\:/\-/g;s/\%/\\x/g" <<< "$1"))
@@ -11,9 +10,16 @@ function register() {
 		return 1
 	fi
 	
-	local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
-	local hash=$(echo -n $2$salt | sha256sum | cut -c 1-64)
-	local token=$(dd if=/dev/urandom bs=32 count=1 | sha1sum | cut -c 1-40)
+	if [[ "${cfg[hash]}" == "argon2id" ]]; then
+		local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
+		local token=$(dd if=/dev/urandom bs=32 count=1 | sha1sum | cut -c 1-40)
+		local hash="$(echo -n "$2" | argon2 "$salt" -id -e)"
+	else
+		local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
+		local token=$(dd if=/dev/urandom bs=32 count=1 | sha1sum | cut -c 1-40)
+		local hash=$(echo -n $2$salt | sha256sum | cut -c 1-64)
+	fi
+	
 	set_cookie_permanent "sh_session" $token
 	set_cookie_permanent "username" $username
 	
@@ -26,7 +32,14 @@ function login() {
 	IFS=':'
 	local user=($(grep -P "$username:" secret/users.dat))
 	unset IFS
-	if [[ $(echo -n $2${user[2]} | sha256sum | cut -c 1-64 ) == "${user[1]}" ]]; then
+
+	if [[ "${cfg[hash]}" == "argon2id" ]]; then
+		hash="$(echo -n "$2" | argon2 "${user[2]}" -id -e)"
+	else
+		hash="$(echo -n $2${user[2]} | sha256sum | cut -c 1-64 )"
+	fi
+	
+	if [[ "$hash" == "${user[1]}" ]]; then
 		set_cookie_permanent "sh_session" "${user[3]}"
 		set_cookie_permanent "username" "$username"
 		return 0
@@ -47,7 +60,14 @@ function login_simple() {
 	IFS=':'
 	local user=($(grep "$login:" secret/users.dat))
 	unset IFS
-	if [[ $(echo -n $password${user[2]} | sha256sum | cut -c 1-64 ) == ${user[1]} ]]; then
+
+	if [[ "${cfg[hash]}" == "argon2id" ]]; then
+		hash="$(echo -n "$password" | argon2 "$salt" -id -e)"
+	else
+		hash="$(echo -n $password${user[2]} | sha256sum | cut -c 1-64 )"
+	fi
+	
+	if [[ "$hash" == "${user[1]}" ]]; then
 		r[authorized]=true
 	else 
 		r[authorized]=false
