@@ -69,7 +69,7 @@ function render() {
 			if [[ "$3" != true ]]; then
 				local value="$(html_encode <<< "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
 			else
-				local value="$(sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' <<< "${ref[$key]}" | html_encode | sed -E 's/\&/�UwU�/g')"
+				local value="$(echo -n "${ref[$key]}" | tr -d $'\01'$'\02' | tr $'\n' $'\01' | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
 		else
