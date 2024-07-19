@@ -98,10 +98,11 @@ function logout() {
 
 # session_verify(session)
 function session_verify() {
+	[[ "$1" == '' ]] && return 1
 	IFS=$'\n'
 	while read user; do
 		IFS=: a=($user)
-		if [[ "${a[3]}" == "$1" && "$1" != '' ]]; then
+		if [[ "${a[3]}" == "$1" ]]; then
 			return 0
 		fi
 	done < secret/users.dat
@@ -114,10 +115,10 @@ function session_get_username() {
 
 	IFS=$'\n'
 	while read user; do
-		IFS=':' a=$($user)
+		IFS=':' a=($user)
 		if [[ "${a[3]}" == "$1" ]]; then
 			echo "${a[0]}"
-			break
+			return 0
 		fi
 	done < secret/users.dat
 	return 1
