@@ -5,10 +5,15 @@
 function register() {
 	local username=$(echo -ne $(sed -E "s/ /_/g;s/\:/\-/g;s/\%/\\x/g" <<< "$1"))
 
-	if [[ $(grep "$username:" secret/users.dat) != '' ]]; then
-		reason="This user already exists!"
-		return 1
-	fi
+	IFS=$'\n'
+	while read user; do
+		IFS=: a=($user)
+		if [[ "${a[0]}" == "$username" ]]; then
+			reason="This user already exists!"
+			return 1
+		fi
+	done < secret/users.dat
+	unset IFS
 	
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
 		local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
@@ -29,9 +34,17 @@ function register() {
 # login(username, password) 
 function login() {
 	local username=$(echo -ne $(sed -E 's/%/\\x/g' <<< "$1"))
-	IFS=':'
-	local user=($(grep -P "$username:" secret/users.dat))
-	unset IFS
+	IFS=$'\n'
+	while read a; do
+		IFS=: user=($a)
+		if [[ "${user[0]}" == "$username" ]]; then
+			break
+		fi
+	done < secret/users.dat
+	if [[ "${user[0]}" == '' ]]; then
+		reason="Bad credentials"
+		return 1
+	fi
 
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
 		hash="$(echo -n "$2" | argon2 "${user[2]}" -id -e)"
@@ -46,7 +59,7 @@ function login() {
 	else
 		remove_cookie "sh_session"
 		remove_cookie "username"
-		reason="Invalid credentials!!11"
+		reason="Bad credentials"
 		return 1
 	fi
 }
@@ -56,13 +69,16 @@ function login_simple() {
 	local data=$(base64 -d <<< "$3")
 	local password=$(sed -E 's/^(.*)\://' <<< "$data")
 	local login=$(sed -E 's/\:(.*)$//' <<< "$data")
-	
-	IFS=':'
-	local user=($(grep "$login:" secret/users.dat))
+
+	IFS=$'\n'
+	while read a; do
+		IFS=':' user=($a)
+		[[ ${user[0]} == "$login" ]] && break
+	done < secret/users.dat
 	unset IFS
 
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
-		hash="$(echo -n "$password" | argon2 "$salt" -id -e)"
+		hash="$(echo -n "$password" | argon2 "${user[2]}" -id -e)"
 	else
 		hash="$(echo -n $password${user[2]} | sha256sum | cut -c 1-64 )"
 	fi
@@ -82,26 +98,34 @@ function logout() {
 
 # session_verify(session)
 function session_verify() {
-	if [[ $(grep ":$1" secret/users.dat) != '' && $1 != '' ]]; then
-		return 0
-	else
-		return 1
-	fi
+	IFS=$'\n'
+	while read user; do
+		IFS=: a=($user)
+		if [[ "${a[3]}" == "$1" && "$1" != '' ]]; then
+			return 0
+		fi
+	done < secret/users.dat
+	return 1
 }
 
 # session_get_username(session)
 function session_get_username() {
-	[[ "$1" == "" ]] && return
+	[[ "$1" == "" ]] && return 1
 
-	IFS=':'
-	local data=($(grep ":$1$" secret/users.dat))
-	unset IFS
-	echo ${data[0]}
+	IFS=$'\n'
+	while read user; do
+		IFS=':' a=$($user)
+		if [[ "${a[3]}" == "$1" ]]; then
+			echo "${a[0]}"
+			break
+		fi
+	done < secret/users.dat
+	return 1
 }
 
 # THIS FUNCTION IS DANGEROUS
 # delete_account(username)
 function delete_account() {
-  [[ "$1" == "" ]] && return
+  [[ "$1" == "" ]] && return 1
   sed -i "s/^$1:.*//;/^$/d" secret/users.dat
 }
