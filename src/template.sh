@@ -12,30 +12,10 @@ function render() {
 	local -n ref=$1
 	local tmp=$(mktemp)
 
-	# hack below!
-	# this whole code iterates over an array we control, but I want to add
-	# template includes. Hence, we have to pre-parse the template to
-	# find all of our include statements and add them to the roundup.
-
-	while read elem; do
-		ref[#$elem]=
-	done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
-
 	local key
 	IFS=$'\n'
 	for key in ${!ref[@]}; do
-		if [[ "$key" == "#"* ]]; then # include mode
-			local file="${key/\#/}"
-
-			# below check prevents the loop loading itself as a template.
-			# this is possibly not enough to prevent all recursions, but
-			# i see it as a last-ditch measure. so it'll do here.
-			if [[ "$file" == "$2" ]]; then
-				echo 's'$'\02''\{\{'"\\$key"'\}\}'$'\02''I cowardly refuse to endlessly recurse\!'$'\02''g;' >> "$tmp"
-			elif [[ -f "$file" ]]; then
-				echo 's'$'\02''\{\{'"\\$key"'\}\}'$'\02'"$(tr -d $'\01'$'\02' < "$file" | sed 's/\&/�UwU�/g')"$'\02''g;' >> "$tmp"
-			fi
-		elif [[ "$key" == "_"* ]]; then # iter mode
+		if [[ "$key" == "_"* ]]; then # iter mode
 			local subtemplate=$(mktemp)
 			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
 
@@ -61,6 +41,12 @@ function render() {
 
 			local subtemplate=$(mktemp)
 			echo 's'$'\02''\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'$'\02''\2\3'$'\02'';' >> "$subtemplate"
+
+			# TODO: check if this is needed?
+			# the code below makes sure to resolve the conditional blocks
+			# *before* anything else. I can't think of *why* this is needed
+			# right now, but I definitely had a reason in this. Question is, what reason.
+			
 			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
 
 			rm "$subtemplate"
@@ -77,6 +63,26 @@ function render() {
 		fi
 	done
 	unset IFS
+
+	# process file includes;
+	# achtung: even though this is *after* the main loop, it actually executes sed reaplces *before* it;
+	# recursion is currently unsupported here, i feel like it may break things?
+	if [[ "$template" == *'{{#'* && "$3" != true ]]; then
+		local subtemplate=$(mktemp)
+		while read key; do 
+			# below check prevents the loop loading itself as a template.
+			# this is possibly not enough to prevent all recursions, but
+			# i see it as a last-ditch measure. so it'll do here.
+			if [[ "$file" == "$2" ]]; then
+				echo 's'$'\02''\{\{\#'"$key"'\}\}'$'\02''I cowardly refuse to endlessly recurse\!'$'\02''g;' >> "$subtemplate"
+			elif [[ -f "$key" ]]; then
+				echo 's'$'\02''\{\{\#'"$key"'\}\}'$'\02'"$(tr -d $'\01'$'\02' < "$key" | tr $'\n' $'\01' | sed 's/\&/�UwU�/g')"$'\02''g;' >> "$subtemplate"
+			fi
+		done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
+
+		cat <<< $(cat "$subtemplate" "$tmp") > "$tmp"
+		rm "$subtemplate"
+	fi
 
 	if [[ "$3" != true ]]; then # are we recursing?
 		cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
