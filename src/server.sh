@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+
+# If $1 is set to true, enable the call trace
+if [[ "$1" == true ]]; then
+    set -x
+fi
+
 source config/master.sh
 source src/mime.sh
 source src/misc.sh

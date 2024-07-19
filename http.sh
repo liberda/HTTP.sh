@@ -6,7 +6,7 @@ if [[ ! -f "config/master.sh" ]]; then
 	cat <<EOF > "config/master.sh"
 declare -A cfg
 
-cfg[ip]=0.0.0.0 # IP address to bind to - use 0.0.0.0 to bind to all
+cfg[ip]=[::] # IP address to bind to - use [::] to bind to all
 
 cfg[http]=true # enables/disables listening on HTTP
 cfg[port]=1337 # HTTP port
@@ -161,6 +161,11 @@ EOF
 if [[ "$1" == "debug" ]]; then
 	cfg[dbg]=true
 	echo "[DEBUG] Activated debug mode - stderr will be shown"
+elif [[ "$1" == "debuggier" ]]; then
+    cfg[dbg]=true
+    cfg[debuggier]=true
+    echo "[DEBUG] Activated debuggier mode - stderr and call trace will be shown"
+    set -x
 fi
 
 source src/worker.sh
@@ -173,7 +178,7 @@ if [[ ${cfg[socat_only]} == true ]]; then
 	echo "[INFO] listening directly via socat, assuming no ncat available"
 	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
 	if [[ ${cfg[dbg]} == true ]]; then
-		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh"
+		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'"
 	else
 		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
 		if [[ $? != 0 ]]; then
@@ -189,7 +194,7 @@ else
 			# to quit after the first time-outed connection, ignoring the
 			# "broker" (-k) mode. This is a workaround for this. 
 			while true; do
-				ncat -i 600s -l -U "$socket" -c src/server.sh -k
+				ncat -i 600s -l -U "$socket" -c "src/server.sh ${cfg[debuggier]}" -k
 			done &
 		else
 			while true; do
