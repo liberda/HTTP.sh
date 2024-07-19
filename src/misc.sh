@@ -53,7 +53,7 @@ function url_encode() {
 
 # url_decode(string)
 function url_decode() {
-	echo -ne "$(sed -E 's/%[0-1][0-9a-f]//g;s/%/\\x/g' <<< "$1")"
+	echo -ne "$(sed -E 's/%[0-1][0-9a-f]//g;s/%/\\x/g;s/\+/ /g' <<< "$1")"
 }
 
 # bogus function!
