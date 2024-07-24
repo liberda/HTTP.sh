@@ -140,6 +140,7 @@ function nested_add() {
 	declare -g -A _$nested_id
 	
 	# poor man's array copy
+	IFS=' '
 	for k in ${!nested_ref[@]}; do
 		declare -g -A _$nested_id[$k]="${nested_ref[$k]}"
 	done
