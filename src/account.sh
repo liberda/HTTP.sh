@@ -3,17 +3,13 @@
 
 # register(username, password)
 function register() {
-	local username=$(echo -ne $(sed -E "s/ /_/g;s/\:/\-/g;s/\%/\\x/g" <<< "$1"))
+	local username=$(url_decode "$1")
 
-	IFS=$'\n'
-	while read user; do
-		IFS=: a=($user)
-		if [[ "${a[0]}" == "$username" ]]; then
-			reason="This user already exists!"
-			return 1
-		fi
-	done < secret/users.dat
-	unset IFS
+	data_get secret/users.dat "$username"
+	if [[ $? != 2 && $? != 4 ]]; then # entry not found / file not found
+		reason="This user already exists!"
+		return 1		
+	fi
 	
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
 		local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
@@ -27,21 +23,16 @@ function register() {
 	
 	set_cookie_permanent "sh_session" $token
 	set_cookie_permanent "username" $username
-	
-	echo "$username:$hash:$salt:$token" >> secret/users.dat
+
+	out=("$username" "$hash" "$salt" "$token")
+	data_add secret/users.dat out
 }
 
 # login(username, password) 
 function login() {
-	local username=$(echo -ne $(sed -E 's/%/\\x/g' <<< "$1"))
-	IFS=$'\n'
-	while read a; do
-		IFS=: user=($a)
-		if [[ "${user[0]}" == "$username" ]]; then
-			break
-		fi
-	done < secret/users.dat
-	if [[ "${user[0]}" == '' ]]; then
+	local username=$(url_decode "$1")
+
+	if ! data_get secret/users.dat "$username" 0 user; then
 		reason="Bad credentials"
 		return 1
 	fi
@@ -70,12 +61,7 @@ function login_simple() {
 	local password=$(sed -E 's/^(.*)\://' <<< "$data")
 	local login=$(sed -E 's/\:(.*)$//' <<< "$data")
 
-	IFS=$'\n'
-	while read a; do
-		IFS=':' user=($a)
-		[[ ${user[0]} == "$login" ]] && break
-	done < secret/users.dat
-	unset IFS
+	data_get secret/users.dat "$login" 0 user
 
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
 		hash="$(echo -n "$password" | argon2 "${user[2]}" -id -e)"
@@ -99,13 +85,10 @@ function logout() {
 # session_verify(session)
 function session_verify() {
 	[[ "$1" == '' ]] && return 1
-	IFS=$'\n'
-	while read user; do
-		IFS=: a=($user)
-		if [[ "${a[3]}" == "$1" ]]; then
-			return 0
-		fi
-	done < secret/users.dat
+
+	if data_get secret/users.dat "$1" 3; then
+		return 0
+	fi
 	return 1
 }
 
@@ -113,14 +96,10 @@ function session_verify() {
 function session_get_username() {
 	[[ "$1" == "" ]] && return 1
 
-	IFS=$'\n'
-	while read user; do
-		IFS=':' a=($user)
-		if [[ "${a[3]}" == "$1" ]]; then
-			echo "${a[0]}"
-			return 0
-		fi
-	done < secret/users.dat
+	if data_get secret/users.dat "$1" 3 user; then
+		echo "${user[0]}"
+		return 0
+	fi
 	return 1
 }
 
@@ -128,5 +107,5 @@ function session_get_username() {
 # delete_account(username)
 function delete_account() {
   [[ "$1" == "" ]] && return 1
-  sed -i "s/^$1:.*//;/^$/d" secret/users.dat
+  data_yeet secret/users.dat "$1"
 }
