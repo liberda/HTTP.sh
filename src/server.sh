@@ -187,7 +187,7 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		for i in $boundaries_list; do
 			tmpout=$(mktemp -p $tmpdir)
 			dd iflag=fullblock if=$tmpfile ibs=$(($i+$delimeter_len)) obs=1M skip=1 | while true; do
-				read line
+				read -r line
 				if [[ $line == $'\015' ]]; then
 					cat - > $tmpout
 					break
@@ -201,7 +201,7 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		done
 		rm $tmpfile
 	else
-		read -N "${r[content_length]}" data
+		read -r -N "${r[content_length]}" data
 		
 		IFS='&'
 		for i in $(tr -d '\n' <<< "$data"); do

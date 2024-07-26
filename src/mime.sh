@@ -14,16 +14,20 @@
 
 function get_mime() {
 	local file="$@"
-	local mime="$(file --mime-type -b "$file")"
-	if [[ $file == *".htm" || $file == *".html" ]]; then
-		mimetype="text/html"
-	elif [[ $file == *".shs" || $file == *".py" || $file == *".php" ]]; then
-		mimetype=""
-	elif [[ $file == *".css" ]]; then
-		mimetype="text/css"
-	elif [[ $mime == "text/"* && $mime != "text/xml" ]]; then
-		mimetype="text/plain"
+	if [[ -f "$file" ]]; then
+		local mime="$(file --mime-type -b "$file")"
+		if [[ $file == *".htm" || $file == *".html" ]]; then
+			mimetype="text/html"
+		elif [[ $file == *".shs" || $file == *".py" || $file == *".php" ]]; then
+			mimetype=""
+		elif [[ $file == *".css" ]]; then
+			mimetype="text/css"
+		elif [[ $mime == "text/"* && $mime != "text/xml" ]]; then
+			mimetype="text/plain"
+		else
+			mimetype="$mime"
+		fi
 	else
-		mimetype="$mime"
+		mimetype=""
 	fi
 }

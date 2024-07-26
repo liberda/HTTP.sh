@@ -1,9 +1,13 @@
+# TODO: move parts of this into server.sh, or rename the file appropriately
+
 function __headers() {
 	if [[ "${cfg[unbuffered]}" != true ]]; then
-		if [[ "${r[headers]}" == *'Location'* ]]; then
+		if [[ "${r[headers]}" == *'Location'* ]]; then # override for redirects
 			printf "HTTP/1.0 302 aaaaa\r\n"	
-		else
+		elif [[ "${r[status]}" == '200' || "${r[status]}" == '212' ]]; then # normal or router, should just return 200
 			printf "HTTP/1.0 200 OK\r\n"
+		else # changed by the user in the meantime :)
+			printf "HTTP/1.0 ${r[status]} meow\r\n"
 		fi
 		[[ "${r[headers]}" != '' ]] && printf "${r[headers]}"
 		printf "${cfg[extra_headers]}\r\n"

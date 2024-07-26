@@ -21,8 +21,8 @@ function register() {
 		local hash=$(echo -n $2$salt | sha256sum | cut -c 1-64)
 	fi
 	
-	set_cookie_permanent "sh_session" $token
-	set_cookie_permanent "username" $username
+	set_cookie_permanent "sh_session" "$token"
+	set_cookie_permanent "username" "$username"
 
 	out=("$username" "$hash" "$salt" "$token")
 	data_add secret/users.dat out
