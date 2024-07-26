@@ -33,6 +33,8 @@ while read -r param; do
 	value=''
 	data=''
 	unset IFS
+
+	# TODO: think about refactoring those ifs; maybe we *don't* need to have a header "allowlist" afterall...
 	
 	if [[ "$param_l" == $'\015' ]]; then
 		break
@@ -84,35 +86,22 @@ while read -r param; do
 	elif [[ "$param_l" == "range: bytes="* ]]; then
 		r[range]="$(sed 's/Range: bytes=//;s/\r//' <<< "$param")"
 		
-	elif [[ "$param" == *"GET "* ]]; then
-		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/GET //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
-		data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
-		if [[ "$data" != "${r[url]}" ]]; then
-			data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//' <<< "${r[url]}")"
-			IFS='&'
-			for i in $data; do
-				name="${i/=*/}"
-				value="${i/*=/}"
-				get_data[$name]="$value"
-			done
-		fi
-		
-	elif [[ "$param" == *"POST "* ]]; then
-		r[url]="$(echo -ne "$(url_decode "$(sed -E 's/POST //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")")")"
-		r[post]=true
-		# below shamelessly copied from GET, should be moved to a function
-		data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//;s/\&/ /g' <<< "${r[url]}")"
-		if [[ "$data" != "${r[url]}" ]]; then
-			data="$(sed -E 's/\?/��Lun4_iS_CuTe�/;s/^(.*)��Lun4_iS_CuTe�//' <<< "${r[url]}")"
-			IFS='&'
-			for i in $data; do
-				name="${i/=*/}"
-				value="${i/*=/}"
-				get_data[$name]="$value"
-			done
-		fi		
+	elif [[ "$param" =~ ^(GET|POST|PATCH|PUT|DELETE|MEOW) ]]; then # TODO: OPTIONS, HEAD
+		r[method]="${param%% *}"
+		[[ "${r[meow],,}" != "get" ]] && r[post]=true
+		r[url]="$(sed -E 's/^[a-zA-Z]* //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
+
+		IFS='&'
+		for i in ${r[url]#*\?}; do
+			name="$(url_decode "${i%=*}")"
+			value="$(url_decode "${i#*=}")"
+			get_data[$name]="$value"
+		done
+		unset IFS
 	fi
 done
+
+r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
 
 r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
