@@ -88,7 +88,7 @@ while read -r param; do
 		
 	elif [[ "$param" =~ ^(GET|POST|PATCH|PUT|DELETE|MEOW) ]]; then # TODO: OPTIONS, HEAD
 		r[method]="${param%% *}"
-		[[ "${r[meow],,}" != "get" ]] && r[post]=true
+		[[ "${r[method],,}" != "get" ]] && r[post]=true
 		r[url]="$(sed -E 's/^[a-zA-Z]* //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
 
 		IFS='&'
