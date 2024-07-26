@@ -27,9 +27,9 @@ cfg[ssl_cert]=''
 cfg[ssl_key]=''
 
 cfg[extension]='shs'
-cfg[extra_headers]='server: HTTP.sh/0.95 (devel)'
+cfg[extra_headers]='server: HTTP.sh/0.96 (devel)'
 
-cfg[title]='HTTP.sh 0.95'
+cfg[title]='HTTP.sh 0.96'
 
 cfg[php_enabled]=false # enable PHP script evalutaion (requires PHP)
 cfg[python_enabled]=false # enable Python script evalutaion (requires Python)
