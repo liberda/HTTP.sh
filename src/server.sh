@@ -12,6 +12,7 @@ source src/account.sh
 source src/mail.sh
 source src/route.sh
 source src/template.sh
+source src/notORM.sh # to be split off HTTP.sh at some point :^)
 [[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
 
 declare -A r # current request / response
