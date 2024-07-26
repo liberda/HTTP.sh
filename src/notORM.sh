@@ -93,7 +93,7 @@ data_iter() {
 #
 # `value` is any string, which will directly replace `search`
 #
-# data_replace(store, search, value, [column])
+# data_replace_value(store, search, value, [column])
 data_replace_value() {
 	[[ ! "$3" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
