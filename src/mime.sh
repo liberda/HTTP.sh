@@ -31,3 +31,20 @@ function get_mime() {
 		mimetype=""
 	fi
 }
+
+# get_mime_contents(path) -> $mimetype
+# Sets an empty mimetype if nothing known is matched
+# Limitations:
+# - CSS doesn't get matched (curse you `file`)
+# TODO: add more types
+function get_mime_contents() {
+    local ftype=$(file "$1")
+    mimetype=""
+    case "$ftype" in
+        *"HTML document"*) mimetype="text/html";;
+        *"SVG Scalable Vector Graphics image"*) mimetype="image/svg+xml";;
+        *"PNG image data"*) mimetype="image/png";;
+        *"JPEG image data"*) mimetype="image/jpeg";;
+    esac
+}
+

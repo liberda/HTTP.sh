@@ -1,5 +1,7 @@
 # TODO: move parts of this into server.sh, or rename the file appropriately
 
+# __headers(end)
+# Sets the header and terminates the header block if end is NOT set to false
 function __headers() {
 	if [[ "${cfg[unbuffered]}" != true ]]; then
 		if [[ "${r[headers]}" == *'Location'* ]]; then # override for redirects
@@ -19,7 +21,8 @@ function __headers() {
 		get_mime "${r[uri]}"
 		[[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
 	fi
-	printf "\r\n"
+
+    [[ "$1" != false ]] && printf "\r\n"
 }
 
 if [[ ${r[status]} == 212 ]]; then
@@ -28,7 +31,10 @@ if [[ ${r[status]} == 212 ]]; then
 	else
 		temp=$(mktemp)
 		source "${r[view]}" > $temp
-		__headers
+		__headers false
+        get_mime_contents "$temp"
+        [[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
+        printf "\r\n"
 		cat $temp
 		rm $temp
 	fi
