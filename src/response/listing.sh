@@ -1,4 +1,5 @@
 printf "HTTP/1.0 200 OK
+content-type: text/html
 ${cfg[extra_headers]}\r\n\r\n"
 
 source templates/head.sh
