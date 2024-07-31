@@ -32,8 +32,9 @@ if [[ ${r[status]} == 212 ]]; then
 		temp=$(mktemp)
 		source "${r[view]}" > $temp
 		__headers false
-        get_mime_contents "$temp"
-        [[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
+        mimetype=$(file --mime-type -b "$temp")
+        # Defaults to text/plain for things it doesn't know, eg. CSS
+        [[ "$mimetype" != 'text/plain' ]] && printf "content-type: $mimetype\r\n"
         printf "\r\n"
 		cat $temp
 		rm $temp
