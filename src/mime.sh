@@ -16,7 +16,7 @@ function get_mime() {
 	local file="$@"
 	if [[ -f "$file" ]]; then
 		local mime="$(file --mime-type -b "$file")"
-		if [[ $file == *".htm" || $file == *".html" ]]; then
+		if [[ $file == *".htm" || $file == *".html" || $mime == "text/html" ]]; then
 			mimetype="text/html"
 		elif [[ $file == *".shs" || $file == *".py" || $file == *".php" ]]; then
 			mimetype=""
