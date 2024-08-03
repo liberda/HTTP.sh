@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # account.sh - account and session mgmt
 
-# register(username, password)
+# registers a new user.
+# first two params are strings; third is a reference to an array with
+# optional extra data (email, OTP...)
+#
+# register(username, password, [extra])
 function register() {
 	local username=$(url_decode "$1")
+	unset IFS
 
 	data_get secret/users.dat "$username"
 	if [[ $? != 2 && $? != 4 ]]; then # entry not found / file not found
@@ -24,13 +29,14 @@ function register() {
 	set_cookie_permanent "sh_session" "$token"
 	set_cookie_permanent "username" "$username"
 
-	out=("$username" "$hash" "$salt" "$token")
+	out=("$username" "$hash" "$salt" "$token" "${extra[@]}")
 	data_add secret/users.dat out
 }
 
-# login(username, password) 
+# login(username, password) -> [res]
 function login() {
 	local username=$(url_decode "$1")
+	unset IFS
 
 	if ! data_get secret/users.dat "$username" 0 user; then
 		reason="Bad credentials"
@@ -46,6 +52,9 @@ function login() {
 	if [[ "$hash" == "${user[1]}" ]]; then
 		set_cookie_permanent "sh_session" "${user[3]}"
 		set_cookie_permanent "username" "$username"
+
+		declare -ga res=("${user[@]:4}")
+		
 		return 0
 	else
 		remove_cookie "sh_session"
@@ -82,11 +91,13 @@ function logout() {
 	remove_cookie "username"
 }
 
-# session_verify(session)
+# session_verify(session) -> [res]
 function session_verify() {
 	[[ "$1" == '' ]] && return 1
+	unset IFS
 
 	if data_get secret/users.dat "$1" 3; then
+		declare -ga res=("${user[@]:4}")
 		return 0
 	fi
 	return 1
@@ -95,6 +106,7 @@ function session_verify() {
 # session_get_username(session)
 function session_get_username() {
 	[[ "$1" == "" ]] && return 1
+	unset IFS
 
 	if data_get secret/users.dat "$1" 3 user; then
 		echo "${user[0]}"
