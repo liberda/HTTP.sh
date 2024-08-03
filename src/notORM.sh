@@ -25,8 +25,8 @@ newline=$'\02'
 ctrl=$'\03'
 
 repeat() {
-	local IFS=' '
-	printf -- "$2%.0s" $(seq 1 $1)
+	local IFS=$'\n'
+	[[ "$1" -gt 0 ]] && printf -- "$2%.0s" $(seq 1 $1)
 }
 
 # adds a flat `array` to the `store`.
