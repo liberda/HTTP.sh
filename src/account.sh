@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # account.sh - account and session mgmt
+# TODO: add stricter argument checks for all the funcs
 
 # registers a new user.
 # first two params are strings; third is a reference to an array with
 # optional extra data (email, OTP...)
 #
-# register(username, password, [extra])
+# [extra=()] register(username, password)
 function register() {
 	local username=$(url_decode "$1")
 	unset IFS
@@ -17,11 +18,10 @@ function register() {
 	fi
 
 	local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
-	user_gen_reset_token
 
 	_password_hash "$2" "$salt"
 
-	local out=("$username" "$hash" "$salt" "$token" "${extra[@]}")
+	local out=("$username" "$hash" "$salt" "" "${extra[@]}")
 	data_add secret/users.dat out
 
 	_new_session "$username"
@@ -32,9 +32,10 @@ function register() {
 	unset hash
 }
 
-# login(username, password) -> [res]
+# login(username, password, [forever]) -> [res]
 function login() {
 	local username=$(url_decode "$1")
+	[[ "$3" ]] && local forever=true
 	unset IFS
 
 	if ! data_get secret/users.dat "$username" 0 user; then
@@ -45,14 +46,19 @@ function login() {
 	_password_hash "$2" "${user[2]}"
 	
 	if [[ "$hash" == "${user[1]}" ]]; then
-		_new_session "$username"
-		
-		set_cookie_permanent "sh_session" "${session[2]}"
-		set_cookie_permanent "username" "$username"
+		_new_session "$username" "$forever"
+
+		if [[ "$forever" == true ]]; then
+			set_cookie_permanent "sh_session" "${session[2]}"
+			set_cookie_permanent "username" "$username"
+		else
+			set_cookie "sh_session" "${session[2]}"
+			set_cookie "username" "$username"
+		fi
 
 		declare -ga res=("${user[@]:4}")
 
-		unset hash		
+		unset hash
 		return 0
 	else
 		remove_cookie "sh_session"
@@ -199,10 +205,11 @@ session_purge() {
 	data_yeet secret/sessions.dat "$1"
 }
 
-# _new_session(username) -> $session
+# _new_session(username, forever) -> $session
 _new_session() {
 	[[ ! "$1" ]] && return 1
-	session=("$1" "$(date '+%s')" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)")
+	[[ "$2" == true ]] && local forever=true || local forever=false
+	session=("$1" "$(date '+%s')" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)" "$forever")
 	data_add secret/sessions.dat session
 }
 
