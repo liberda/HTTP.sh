@@ -15,16 +15,11 @@ function register() {
 		reason="This user already exists!"
 		return 1		
 	fi
-	
-	if [[ "${cfg[hash]}" == "argon2id" ]]; then
-		local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
-		local token=$(dd if=/dev/urandom bs=20 count=1 status=none | xxd -p) # TODO: fully remove
-		local hash="$(echo -n "$2" | argon2 "$salt" -id -e)"
-	else
-		local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
-		local token=$(dd if=/dev/urandom bs=20 count=1 status=none | xxd -p)
-		local hash=$(echo -n $2$salt | sha256sum | cut -c 1-64)
-	fi
+
+	local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
+	user_gen_reset_token
+
+	_password_hash "$2" "$salt"
 
 	local out=("$username" "$hash" "$salt" "$token" "${extra[@]}")
 	data_add secret/users.dat out
@@ -33,6 +28,8 @@ function register() {
 
 	set_cookie_permanent "sh_session" "${session[2]}"
 	set_cookie_permanent "username" "$username"
+
+	unset hash
 }
 
 # login(username, password) -> [res]
@@ -45,11 +42,7 @@ function login() {
 		return 1
 	fi
 
-	if [[ "${cfg[hash]}" == "argon2id" ]]; then
-		hash="$(echo -n "$2" | argon2 "${user[2]}" -id -e)"
-	else
-		hash="$(echo -n $2${user[2]} | sha256sum | cut -c 1-64 )"
-	fi
+	_password_hash "$2" "${user[2]}"
 	
 	if [[ "$hash" == "${user[1]}" ]]; then
 		_new_session "$username"
@@ -58,12 +51,15 @@ function login() {
 		set_cookie_permanent "username" "$username"
 
 		declare -ga res=("${user[@]:4}")
-		
+
+		unset hash		
 		return 0
 	else
 		remove_cookie "sh_session"
 		remove_cookie "username"
 		reason="Bad credentials"
+		
+		unset hash
 		return 1
 	fi
 }
@@ -76,17 +72,15 @@ function login_simple() {
 
 	data_get secret/users.dat "$login" 0 user
 
-	if [[ "${cfg[hash]}" == "argon2id" ]]; then
-		hash="$(echo -n "$password" | argon2 "${user[2]}" -id -e)"
-	else
-		hash="$(echo -n $password${user[2]} | sha256sum | cut -c 1-64 )"
-	fi
+	_password_hash "$password" "${user[2]}"
 	
 	if [[ "$hash" == "${user[1]}" ]]; then
 		r[authorized]=true
 	else 
 		r[authorized]=false
 	fi
+
+	unset hash
 }
 
 # logout()
@@ -136,9 +130,89 @@ function delete_account() {
   data_yeet secret/users.dat "$1"
 }
 
+# user_reset_password(username, token, new_password)
+user_reset_password() {
+	[[ ! "$1" ]] && return 1 # sensitive function, so we're checking all three
+	[[ ! "$2" ]] && return 1 # there's probably a better way,
+	[[ ! "$3" ]] && return 1 # but i don't care.
+	if data_get secret/users.dat "$1" 0 user; then
+
+		if [[ "$2" == "${user[3]}" ]]; then
+			_password_hash "$3" "${user[2]}"
+			user[1]="$hash"
+			user[3]=''
+
+			data_replace secret/users.dat "$1" user
+
+			session_purge "$1"
+			
+			unset hash token
+			return 0
+		fi
+	fi
+	return 1
+}
+
+# user_change_password(username, old_password, new_password)
+user_change_password() {
+	[[ ! "$1" ]] && return 1
+	[[ ! "$2" ]] && return 1
+	[[ ! "$3" ]] && return 1
+	if data_get secret/users.dat "$1" 0 user; then
+
+		_password_hash "$2" "${user[2]}"
+
+		if [[ "$hash" == "${user[1]}" ]]; then
+			_password_hash "$3" "${user[2]}"
+			[[ ! "$hash" ]] && return
+			user[1]="$hash"
+			user[3]=''
+			data_replace secret/users.dat "$1" user
+
+			session_purge "$1"
+			
+			unset hash token
+			return 0
+		fi
+	fi
+
+	unset hash
+	return 1
+}
+
+# user_gen_reset_token(username) -> $token
+user_gen_reset_token() {
+	[[ ! "$1" ]] && return 1
+	if data_get secret/users.dat "$1" 0 user; then
+		user[3]="$(dd if=/dev/urandom bs=20 count=1 status=none | xxd -p)"
+		data_replace secret/users.dat "$1" user
+		token="${user[3]}"
+	else
+		return 1
+	fi
+}
+
+# logs out ALL sessions for user
+#
+# session_purge(username)
+session_purge() {
+	data_yeet secret/sessions.dat "$1"
+}
+
 # _new_session(username) -> $session
 _new_session() {
 	[[ ! "$1" ]] && return 1
 	session=("$1" "$(date '+%s')" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)")
 	data_add secret/sessions.dat session
+}
+
+_password_hash() {
+	[[ ! "$1" ]] && return 1
+	[[ ! "$2" ]] && return 1
+	
+	if [[ "${cfg[hash]}" == "argon2id" ]]; then
+		hash="$(echo -n "$1" | argon2 "$2" -id -e)"
+	else
+		hash=$(echo -n $1$2 | sha256sum | cut -c 1-64)
+	fi
 }
