@@ -17,20 +17,22 @@ function register() {
 	fi
 	
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
-		local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
-		local token=$(dd if=/dev/urandom bs=32 count=1 | sha1sum | cut -c 1-40)
+		local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
+		local token=$(dd if=/dev/urandom bs=20 count=1 status=none | xxd -p) # TODO: fully remove
 		local hash="$(echo -n "$2" | argon2 "$salt" -id -e)"
 	else
-		local salt=$(dd if=/dev/urandom bs=256 count=1 | sha1sum | cut -c 1-16)
-		local token=$(dd if=/dev/urandom bs=32 count=1 | sha1sum | cut -c 1-40)
+		local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
+		local token=$(dd if=/dev/urandom bs=20 count=1 status=none | xxd -p)
 		local hash=$(echo -n $2$salt | sha256sum | cut -c 1-64)
 	fi
-	
-	set_cookie_permanent "sh_session" "$token"
-	set_cookie_permanent "username" "$username"
 
-	out=("$username" "$hash" "$salt" "$token" "${extra[@]}")
+	local out=("$username" "$hash" "$salt" "$token" "${extra[@]}")
 	data_add secret/users.dat out
+
+	_new_session "$username"
+
+	set_cookie_permanent "sh_session" "${session[2]}"
+	set_cookie_permanent "username" "$username"
 }
 
 # login(username, password) -> [res]
@@ -50,7 +52,9 @@ function login() {
 	fi
 	
 	if [[ "$hash" == "${user[1]}" ]]; then
-		set_cookie_permanent "sh_session" "${user[3]}"
+		_new_session "$username"
+		
+		set_cookie_permanent "sh_session" "${session[2]}"
 		set_cookie_permanent "username" "$username"
 
 		declare -ga res=("${user[@]:4}")
@@ -87,6 +91,10 @@ function login_simple() {
 
 # logout()
 function logout() {
+	log "${cookies[sh_session]}"
+	if [[ "${cookies[sh_session]}" ]]; then
+		data_yeet secret/sessions.dat "${cookies[sh_session]}" 2
+	fi
 	remove_cookie "sh_session"
 	remove_cookie "username"
 }
@@ -95,10 +103,13 @@ function logout() {
 function session_verify() {
 	[[ "$1" == '' ]] && return 1
 	unset IFS
+	local user
 
-	if data_get secret/users.dat "$1" 3; then
-		declare -ga res=("${user[@]:4}")
-		return 0
+	if data_get secret/sessions.dat "$1" 2 session; then
+		if data_get secret/users.dat "${session[0]}" 0 user; then # double-check if tables agree
+			declare -ga res=("${user[@]:4}")
+			return 0
+		fi
 	fi
 	return 1
 }
@@ -107,10 +118,13 @@ function session_verify() {
 function session_get_username() {
 	[[ "$1" == "" ]] && return 1
 	unset IFS
+	local session
 
-	if data_get secret/users.dat "$1" 3 user; then
-		echo "${user[0]}"
-		return 0
+	if data_get secret/sessions.dat "$1" 2 session; then
+		if data_get secret/users.dat "${session[0]}" 0 user; then # double-check if tables agree
+			echo "${user[0]}"
+			return 0
+		fi
 	fi
 	return 1
 }
@@ -120,4 +134,11 @@ function session_get_username() {
 function delete_account() {
   [[ "$1" == "" ]] && return 1
   data_yeet secret/users.dat "$1"
+}
+
+# _new_session(username) -> $session
+_new_session() {
+	[[ ! "$1" ]] && return 1
+	session=("$1" "$(date '+%s')" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)")
+	data_add secret/sessions.dat session
 }
