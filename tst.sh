@@ -1,21 +1,26 @@
 #!/bin/bash
 
-tst() {
-	echo "dummy test!"
+_defaults() {
+	match=""
+	match_begin=""
+	match_end=""
+	match_sub=""
+
+	tst() {
+		echo "dummy test! please set me up properly" > /dev/stderr
+		exit 1
+	}
+
+	prepare() {
+		:
+	}
+
+	cleanup () {
+		:
+	}
 }
 
-match=""
-match_begin=""
-match_end=""
-match_sub=""
-
-prepare() {
-	:
-}
-
-cleanup () {
-	:
-}
+_defaults
 
 on_error() {
 	on_error_default
@@ -139,6 +144,7 @@ for j in "$@"; do
 			_a
 		done
 	fi
+	_defaults
 done
 
 _final_cleanup
