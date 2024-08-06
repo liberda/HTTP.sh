@@ -48,7 +48,7 @@ function html_encode() {
 
 # url_encode(string)
 function url_encode() {
-	xxd -ps -u <<< "$1" | tr -d '\n' | sed -E 's/.{2}/%&/g'
+	echo -n "$1" | xxd -p | tr -d '\n' | sed -E 's/.{2}/%&/g'
 }
 
 # url_decode(string)

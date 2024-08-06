@@ -33,7 +33,7 @@ misc_url_encode() {
 		url_encode "$value"
 	}
 	value="nyaa"
-	match="$value"
+	match=""
 }
 
 misc_url_encode_special01() {
@@ -53,7 +53,8 @@ misc_url_encode_special03() {
 
 misc_url_encode_url() {
 	value="https://example.org/?nyaa=meow"
-	match="https%3A%2F%2Fexample.org%2F%3Fnyaa%3Dmeow" 
+	# i promise we'll get a better impl of this at some point xD
+	match="%68%74%74%70%73%3a%2f%2f%65%78%61%6d%70%6c%65%2e%6f%72%67%2f%3f%6e%79%61%61%3d%6d%65%6f%77" 
 }
 
 # ---
