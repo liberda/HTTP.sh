@@ -28,7 +28,7 @@ on_success() {
 on_success_default() {
 	echo "OK: $test_name"
 	(( ok_count++ ))
-	return 0 # surprisingly load-bearing
+	return 0
 }
 
 on_error_default() {
@@ -44,28 +44,65 @@ on_fatal() {
 	exit 1
 }
 
-if [[ ! -f "$1" ]]; then
-	echo -e "$0 - basic test framework\n\nusage: $0 <test> [test] [...]"
-	exit 1
-fi
+IFS=$'\n'
+for i in "$@"; do
+	if [[ ! -f "$i" ]]; then
+		echo -e "$0 - basic test framework\n\nusage: $0 <test> [test] [...]"
+		exit 1
+	fi
+done
+unset IFS
 
 ok_count=0
 fail_count=0
 
 _a() {
 	[[ "$res_code" == 255 ]] && on_fatal
+
+	# Q: why not `[[ ... ]] && a || b`?
+	# A: simple; if `a` returns 1, `b` will get called erroneously.
+	#	 normally one wouldn't care, but those functions are meant to
+	#    be overriden. I don't want to fund anyone a lot of frustration,
+	#	 so splitting the ifs is a saner option here :)
+	
 	if [[ "$match" ]]; then
-		[[ "$res" == "$match" ]] && on_success || on_error
+		if [[ "$res" == "$match" ]]; then
+			on_success
+		else
+			on_error
+		fi
 	elif [[ "$match_sub" ]]; then
-		[[ "$res" == *"$match_sub"* ]] && on_success || on_error
+		if [[ "$res" == *"$match_sub"* ]]; then
+			on_success
+		else
+			on_error
+		fi
 	elif [[ "$match_begin" ]]; then
-		[[ "$res" == "$match_begin"* ]] && on_success || on_error
+		if [[ "$res" == "$match_begin"* ]]; then
+			on_success
+		else
+			on_error
+		fi
 	elif [[ "$match_end" ]]; then
-		[[ "$res" == *"$match_end" ]] && on_success || on_error
+		if [[ "$res" == *"$match_end" ]]; then
+			on_success
+		else
+			on_error
+		fi
+	elif [[ "$match_not" ]]; then
+		if [[ "$res" == *"$match_not"* ]]; then
+			on_error
+		else
+			on_success
+		fi
 	else
-		[[ "$res_code" == 0 ]] && on_success || on_error
+		if [[ "$res_code" == 0 ]]; then
+			on_success
+		else
+			on_error
+		fi
 	fi
-	unset match match_sub match_begin match_end
+	unset match match_sub match_begin match_end match_not
 	prepare() { :; }
 }
 

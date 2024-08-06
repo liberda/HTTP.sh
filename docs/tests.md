@@ -77,14 +77,15 @@ The following return codes are defined:
 ## determining success / failure 
 
 Besides very simple return-code based matching, `tst.sh` also supports stdout matching with the
-following strings:
+following variables:
 
 - `match` (matches the whole string)
 - `match_sub` (matches a substring)
 - `match_begin` (matches the beginning)
 - `match_end` (matches the end)
+- `match_not` (inverse substring match)
 
-If any of those is defined, all except fatal return codes are ignored. If more than one of those
+If any of those are defined, all except fatal return codes are ignored. If more than one of those
 is defined, it checks the list above top-to-bottom and picks the first one that is set, ignoring
 all others. 
 
@@ -95,8 +96,7 @@ The framework defines two special functions, plus a few callbacks that can be ov
 ### prepare
 
 `prepare` runs **once** after definition, right before the test itself. As of now, it's the only
-function that gets cleaned up after each run (by design); With this, one can ensure a consistent
-state for a group of tests.
+function that gets cleaned up after each run (by design; see section `statefullness` below)
 
 By default (undefined state), `prepare` does nothing.
 
@@ -145,3 +145,25 @@ Called on every success, failure and fatal error. First two call `on_{success,er
 which increments the counter and outputs the OK/FAIL message. The third one just logs the FATAL,
 cleans up and exits. Overloading `on_fatal` is not recommended; While overloading the other two,
 make sure to add a call to the `_default` function, or handle the numbers gracefully by yourself.
+
+## statefullness
+
+This framework is designed in a way where a lot of the state is inherited from previous tests. This
+is by-design, to make sure that there's less repetition in the tests themselves. It is up to the
+author of the tests to remember about cleaning up variables and other state that could affect any
+further tests in the chain.
+
+Currently, state is cleaned up under the following circumstances:
+- all `match` variables get cleaned up after every test
+- `prepare()` function is reset after every test (so, each definition of `prepare` will run
+  exactly *once*)
+- upon switching files, `tst()` and `cleanup()` get reset to initial values. Of note, those two
+  **do** get inherited between subtests in a single file!
+- upon termination of the test harness, it tries to kill all child processes
+
+The following state **is not** cleaned up:
+- `tst()` and `cleanup()` between subtests in a single file
+- `on_error()`, `on_success()` functions
+- any global user-defined variables, also between files
+- any started processes
+- any modified files (we don't have a way to track those atm, although I may look into this)
