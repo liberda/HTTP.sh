@@ -164,6 +164,7 @@ if [[ "$1" == "debug" ]]; then
 elif [[ "$1" == "debuggier" ]]; then
     cfg[dbg]=true
     cfg[debuggier]=true
+    export PS4=' ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
     echo "[DEBUG] Activated debuggier mode - stderr and call trace will be shown"
     set -x
 fi
