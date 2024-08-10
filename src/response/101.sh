@@ -3,10 +3,10 @@ Connection: Upgrade
 Upgrade: WebSocket
 ${cfg[extra_headers]}"
 if [[ ${r[websocket_key]} != '' ]]; then
-	accept=$(echo -ne $(printf "${r[websocket_key]}""258EAFA5-E914-47DA-95CA-C5AB0DC85B11" | sha1sum | sed 's/ //g;s/-//g;s/.\{2\}/\\x&/g') | base64)
+	accept=$(echo -ne $(echo "${r[websocket_key]}""258EAFA5-E914-47DA-95CA-C5AB0DC85B11" | sha1sum | sed 's/ //g;s/-//g;s/.\{2\}/\\x&/g') | base64)
 	echo "Sec-WebSocket-Accept: "$accept
 fi
-printf "\r\n\r\n"
+echo -e "\r\n\r\n"
 
 #echo "Laura is cute <3"
 #WebSocket-Location: ws://localhost:1337/

@@ -5,24 +5,24 @@
 function __headers() {
 	if [[ "${cfg[unbuffered]}" != true ]]; then
 		if [[ "${r[headers]}" == *'Location'* ]]; then # override for redirects
-			printf "HTTP/1.0 302 aaaaa\r\n"	
+			echo -ne "HTTP/1.0 302 aaaaa\r\n"	
 		elif [[ "${r[status]}" == '200' || "${r[status]}" == '212' ]]; then # normal or router, should just return 200
-			printf "HTTP/1.0 200 OK\r\n"
+			echo -ne "HTTP/1.0 200 OK\r\n"
 		else # changed by the user in the meantime :)
-			printf "HTTP/1.0 ${r[status]} meow\r\n"
+			echo -ne "HTTP/1.0 ${r[status]} meow\r\n"
 		fi
-		[[ "${r[headers]}" != '' ]] && printf "${r[headers]}"
-		printf "${cfg[extra_headers]}\r\n"
+		[[ "${r[headers]}" != '' ]] && echo -ne "${r[headers]}"
+		echo -ne "${cfg[extra_headers]}\r\n"
 	else
 		echo "uh oh - we're running unbuffered" > /dev/stderr
 	fi
 	
 	if [[ ${r[status]} == 200 ]]; then
 		get_mime "${r[uri]}"
-		[[ "$mimetype" != '' ]] && printf "content-type: $mimetype\r\n"
+		[[ "$mimetype" != '' ]] && echo -ne "content-type: $mimetype\r\n"
 	fi
 
-    [[ "$1" != false ]] && printf "\r\n"
+    [[ "$1" != false ]] && echo -ne "\r\n"
 }
 
 if [[ ${r[status]} == 212 ]]; then
@@ -34,8 +34,8 @@ if [[ ${r[status]} == 212 ]]; then
 		__headers false
         get_mime "$temp"
         # Defaults to text/plain for things it doesn't know, eg. CSS
-        [[ "$mimetype" != 'text/plain' ]] && printf "content-type: $mimetype\r\n"
-        printf "\r\n"
+        [[ "$mimetype" != 'text/plain' ]] && echo -ne "content-type: $mimetype\r\n"
+        echo -ne "\r\n"
 		cat $temp
 		rm $temp
 	fi
