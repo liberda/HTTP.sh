@@ -75,17 +75,27 @@ data_get() {
 # run `callback` on all entries from `store` that match `search`.
 # by default uses the 0th column. override with optional `column`
 #
+# immediately exits with 1 if the callback function returned 1
+# if there were no matches, returns 2
+# if the store wasn't found, returns 4
+#
 # data_iter(store, search, callback, [column]) -> $data
 data_iter() {
 	[[ ! "$3" ]] && return 1
+	[[ ! -f "$1" ]] && return 4
 	local column=${4:-0}
 	local IFS=$'\n'
+	local r=1
 
 	while read line; do
 		local IFS=$delim
 		data=($(tr '\02' '\n' <<< "$line"))
 		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
+		[[ $? == 1 ]] && return 1
+		r=0
 	done < "$1"
+
+	return $r
 }
 
 # replace a value in `store` with `array`, filtering by `search`.
