@@ -119,18 +119,19 @@ echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${ge
 [[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
 if [[ ${r[status]} != 101 ]]; then
-	clean_url="$(sed -E 's/\?.*//' <<< "${r[url]}")"
+	clean_url="${r[url]%\?*}"
 	for (( i=0; i<${#route[@]}; i=i+3 )); do
 		if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "$clean_url")" != "" ]] || [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "$clean_url/")" != "" ]]; then
 			r[status]=212
 			r[view]="${route[$((i+2))]}"
 			IFS='/'
 			url=(${route[$i]})
-			url_=($(cut -d '?' -f 1 <<< "${r[url]}"))
+			url_=($clean_url)
 			unset IFS
 			for (( j=0; j<${#url[@]}; j++ )); do
+				# TODO: think about the significance of this if really hard when i'm less tired
 				if [[ ${url_[$j]} != '' && ${url[$j]} == ":"* ]]; then
-					params[$(sed 's/://' <<< "${url[$j]}")]="${url_[$j]}"
+					params[${url[$j]/:/}]="${url_[$j]}"
 				fi
 			done
 			break
