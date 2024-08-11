@@ -24,6 +24,9 @@ delim=$'\01'
 newline=$'\02'
 ctrl=$'\03'
 
+# TODO: proper locking
+# TODO: matching more than one column 
+
 repeat() {
 	local IFS=$'\n'
 	[[ "$1" -gt 0 ]] && printf -- "$2%.0s" $(seq 1 $1)
@@ -75,7 +78,7 @@ data_get() {
 # run `callback` on all entries from `store` that match `search`.
 # by default uses the 0th column. override with optional `column`
 #
-# immediately exits with 1 if the callback function returned 1
+# immediately exits with 1 if the callback function returned 255
 # if there were no matches, returns 2
 # if the store wasn't found, returns 4
 #
@@ -91,7 +94,7 @@ data_iter() {
 		local IFS=$delim
 		data=($(tr '\02' '\n' <<< "$line"))
 		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
-		[[ $? == 1 ]] && return 1
+		[[ $? == 255 ]] && return 1
 		r=0
 	done < "$1"
 
@@ -134,7 +137,7 @@ data_replace() {
 	local IFS=' '
 	
 	for i in "${ref[@]}"; do
-		output+="$(echo -n "$i" | tr -d '\01\02\03' | tr '\n' '\02')$delim"
+		output+="$(echo -n "$i" | tr -d '\01\02\03' | tr '\n' '\02')$delim" # TODO: check if this is arbitrary safe
 	done
 	
 	if [[ $column == 0 ]]; then
