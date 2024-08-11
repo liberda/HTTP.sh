@@ -94,7 +94,7 @@ data_iter() {
 		local IFS=$delim
 		data=($(tr '\02' '\n' <<< "$line"))
 		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
-		[[ $? == 255 ]] && return 1
+		[[ $? == 255 ]] && return 255
 		r=0
 	done < "$1"
 
