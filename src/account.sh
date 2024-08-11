@@ -8,13 +8,17 @@
 #
 # [extra=()] register(username, password)
 function register() {
+	if [[ ! "$1" || ! "$2" ]]; then
+		reason="User/password empty!"
+		return 1
+	fi
 	local username=$(url_decode "$1")
 	unset IFS
 
 	data_get secret/users.dat "$username"
 	if [[ $? != 2 && $? != 4 ]]; then # entry not found / file not found
 		reason="This user already exists!"
-		return 1		
+		return 1
 	fi
 
 	local salt=$(dd if=/dev/urandom bs=16 count=1 status=none | xxd -p)
@@ -34,6 +38,11 @@ function register() {
 
 # login(username, password, [forever]) -> [res]
 function login() {
+	if [[ ! "$1" || ! "$2" ]]; then
+		reason="User/password empty!"
+		return 1
+	fi
+
 	local username=$(url_decode "$1")
 	[[ "$3" ]] && local forever=true
 	unset IFS
@@ -44,7 +53,7 @@ function login() {
 	fi
 
 	_password_hash "$2" "${user[2]}"
-	
+
 	if [[ "$hash" == "${user[1]}" ]]; then
 		_new_session "$username" "$forever"
 
@@ -64,7 +73,7 @@ function login() {
 		remove_cookie "sh_session"
 		remove_cookie "username"
 		reason="Bad credentials"
-		
+
 		unset hash
 		return 1
 	fi
@@ -72,14 +81,19 @@ function login() {
 
 # login_simple(base64)
 function login_simple() {
+
 	local data=$(base64 -d <<< "$3")
 	local password=$(sed -E 's/^(.*)\://' <<< "$data")
 	local login=$(sed -E 's/\:(.*)$//' <<< "$data")
 
+	if [[ ! "$password" || ! "$login" ]]; then
+		return 1
+	fi
+
 	data_get secret/users.dat "$login" 0 user
 
 	_password_hash "$password" "${user[2]}"
-	
+
 	if [[ "$hash" == "${user[1]}" ]]; then
 		r[authorized]=true
 	else 
@@ -91,7 +105,6 @@ function login_simple() {
 
 # logout()
 function logout() {
-	log "${cookies[sh_session]}"
 	if [[ "${cookies[sh_session]}" ]]; then
 		data_yeet secret/sessions.dat "${cookies[sh_session]}" 2
 	fi
@@ -101,7 +114,7 @@ function logout() {
 
 # session_verify(session) -> [res]
 function session_verify() {
-	[[ "$1" == '' ]] && return 1
+	[[ ! "$1" ]] && return 1
 	unset IFS
 	local user
 
@@ -116,7 +129,7 @@ function session_verify() {
 
 # session_get_username(session)
 function session_get_username() {
-	[[ "$1" == "" ]] && return 1
+	[[ ! "$1" ]] && return 1
 	unset IFS
 	local session
 
@@ -132,7 +145,7 @@ function session_get_username() {
 # THIS FUNCTION IS DANGEROUS
 # delete_account(username)
 function delete_account() {
-  [[ "$1" == "" ]] && return 1
+  [[ ! "$1" ]] && return 1
   data_yeet secret/users.dat "$1"
 }
 
@@ -151,7 +164,7 @@ user_reset_password() {
 			data_replace secret/users.dat "$1" user
 
 			session_purge "$1"
-			
+
 			unset hash token
 			return 0
 		fi
@@ -176,7 +189,7 @@ user_change_password() {
 			data_replace secret/users.dat "$1" user
 
 			session_purge "$1"
-			
+
 			unset hash token
 			return 0
 		fi
@@ -216,7 +229,7 @@ _new_session() {
 _password_hash() {
 	[[ ! "$1" ]] && return 1
 	[[ ! "$2" ]] && return 1
-	
+
 	if [[ "${cfg[hash]}" == "argon2id" ]]; then
 		hash="$(echo -n "$1" | argon2 "$2" -id -e)"
 	else
