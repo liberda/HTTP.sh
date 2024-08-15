@@ -9,6 +9,7 @@ function __headers() {
 		elif [[ "${r[status]}" == '200' || "${r[status]}" == '212' ]]; then # normal or router, should just return 200
 			echo -ne "HTTP/1.0 200 OK\r\n"
 		else # changed by the user in the meantime :)
+			[[ ! "${r[status]}" ]] && r[status]=500 # ... if they left it blank
 			echo -ne "HTTP/1.0 ${r[status]} meow\r\n"
 		fi
 		[[ "${r[headers]}" != '' ]] && echo -ne "${r[headers]}"
