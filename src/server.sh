@@ -213,14 +213,15 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		rm $tmpfile
 	else
 		read -r -N "${r[content_length]}" data
-		
-		IFS='&'
-		for i in $(tr -d '\n' <<< "$data"); do
-			name="${i/=*/}"
-			param="${i/*=/}"
-			post_data[$name]="$param"
-		done
+
 		unset IFS
+		while read -d'&' i; do
+			name="${i%%=*}"
+			if [[ "$name" ]]; then
+				param="${i#*=}"
+				post_data[$name]="$param"
+			fi
+		done <<< "$(tr -d '\n' <<< "$data")&"
 	fi
 fi
 
