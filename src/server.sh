@@ -26,6 +26,29 @@ r[status]=210 # Mommy always said that I was special
 r[req_headers]=''
 post_length=0
 
+# start reading the stream here instead of the loop below;
+# this way, we can detect if the connection is even valid HTTP.
+# we're reading up to 8 characters and waiting for a space.
+read -d' ' -r -n8 param
+
+if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS, HEAD
+	r[method]="${param%% *}"
+	read -r param
+	[[ "${r[method],,}" != "get" ]] && r[post]=true
+	r[url]="$(sed -E 's/^ *//;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
+	IFS='&'
+	for i in ${r[url]#*\?}; do
+		name="$(url_decode "${i%%=*}")"
+		value="$(url_decode "${i#*=}")"
+		get_data[$name]="$value"
+	done
+	unset IFS
+	
+else
+	exit 1 # TODO: throw 400 here
+fi
+
+# continue with reading the headers
 while read -r param; do
 	r[req_headers]+="$param"
 	param_l="${param,,}" # lowercase
@@ -85,20 +108,7 @@ while read -r param; do
 
 	elif [[ "$param_l" == "range: bytes="* ]]; then
 		r[range]="$(sed 's/Range: bytes=//;s/\r//' <<< "$param")"
-		
-	elif [[ "$param_l" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS, HEAD
-		r[method]="${param%% *}"
-		[[ "${r[method],,}" != "get" ]] && r[post]=true
-		r[url]="$(sed -E 's/^[a-zA-Z]* //;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
-
-		IFS='&'
-		for i in ${r[url]#*\?}; do
-			name="$(url_decode "${i%%=*}")"
-			value="$(url_decode "${i#*=}")"
-			get_data[$name]="$value"
-		done
-		unset IFS
-	fi
+	fi		
 done
 
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
