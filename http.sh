@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 trap ctrl_c INT
+ctrl_c() {
+	[[ $socket != '' ]] && rm $socket
+	pkill -P $$
+	echo -e "Cleaned up, exitting.\nHave an awesome day!!"
+}
 
 if [[ ! -f "config/master.sh" ]]; then
 	mkdir -p config
@@ -54,32 +59,39 @@ fi
 
 source config/master.sh
 
-function ctrl_c() {
-	[[ $socket != '' ]] && rm $socket
-	pkill -P $$
-	echo -e "Cleaned up, exitting.\nHave an awesome day!!"
-}
-
-if [[ ! -f "$(pwd)/http.sh" ]]; then
+if [[ ! -f "$PWD/http.sh" ]]; then
 		echo -e "Please run HTTP.sh inside it's designated directory\nRunning the script from arbitrary locations isn't supported."
 		exit 1
 fi	
 
-
-for i in $(cat src/dependencies.required); do
-	which $i > /dev/null 2>&1
-	if [[ $? != 0 ]]; then
+while read i; do
+	if ! which $i > /dev/null 2>&1; then
 		echo "ERROR: can't find $i"
 		error=true
 	fi
-done
-for i in $(cat src/dependencies.optional); do
+done < src/dependencies.required
+
+while read i; do
 	which $i > /dev/null 2>&1
 	[[ $? != 0 ]] && echo "WARNING: can't find $i"
-done
+done < src/dependencies.optional
 
-which ncat > /dev/null 2>&1
-if [[ $? != 0 ]]; then
+if [[ "$1" == 'shell' ]]; then
+	bash --rcfile <(echo '
+	x() { declare -p data;} # for notORM
+	source config/master.sh
+	source src/account.sh
+	source src/mail.sh
+	source src/mime.sh
+	source src/misc.sh
+	source src/notORM.sh
+	source src/template.sh
+	source "${cfg[namespace]}/config.sh"
+	PS1="[HTTP.sh] \[\033[01;34m\]\w\[\033[00m\]\$ "')
+	exit 0
+fi
+
+if ! which ncat > /dev/null 2>&1; then
 	if [[ ${cfg[socat_only]} != true ]]; then
 		echo "ERROR: can't find ncat, and cfg[socat_only] is not set to true"
 		error=true
