@@ -183,8 +183,8 @@ _sed_sanitize_array() {
 
 # _trim_control(string) -> $tr
 _trim_control() {
-	tr="${1//$delim}"                # remove 0x01
-	tr="${tr//$newline}"             # remove 0x02
-	tr="${tr//$ctrl}"                # remove 0x03
-	tr="${tr//$'\n'/$newline}$delim" # \n -> 0x02
+	tr="${1//$delim}"          # remove 0x01
+	tr="${tr//$newline}"       # remove 0x02
+	tr="${tr//$ctrl}"          # remove 0x03
+	tr="${tr//$'\n'/$newline}" # \n -> 0x02
 }
