@@ -25,7 +25,7 @@ function register() {
 
 	_password_hash "$2" "$salt"
 
-	local out=("$username" "$hash" "$salt" "" "${extra[@]}")
+	local out=("$username" "$hash" "$salt" "." "${extra[@]}")
 	data_add secret/users.dat out
 
 	_new_session "$username"
@@ -154,12 +154,15 @@ user_reset_password() {
 	[[ ! "$1" ]] && return 1 # sensitive function, so we're checking all three
 	[[ ! "$2" ]] && return 1 # there's probably a better way,
 	[[ ! "$3" ]] && return 1 # but i don't care.
+
+	[[ "$2" == '.' ]] && return 1
+	local user
 	if data_get secret/users.dat "$1" 0 user; then
 
 		if [[ "$2" == "${user[3]}" ]]; then
 			_password_hash "$3" "${user[2]}"
 			user[1]="$hash"
-			user[3]=''
+			user[3]='.'
 
 			data_replace secret/users.dat "$1" user
 
@@ -172,7 +175,7 @@ user_reset_password() {
 	return 1
 }
 
-# user_change_password(username, old_password, new_password)
+# user_change_password(username, old_password, new_password) -> $?, ${user[@]}
 user_change_password() {
 	[[ ! "$1" ]] && return 1
 	[[ ! "$2" ]] && return 1
@@ -199,9 +202,10 @@ user_change_password() {
 	return 1
 }
 
-# user_gen_reset_token(username) -> $token
+# user_gen_reset_token(username) -> $?, $token, ${user[@]}
 user_gen_reset_token() {
 	[[ ! "$1" ]] && return 1
+	
 	if data_get secret/users.dat "$1" 0 user; then
 		user[3]="$(dd if=/dev/urandom bs=20 count=1 status=none | xxd -p)"
 		data_replace secret/users.dat "$1" user
