@@ -53,7 +53,14 @@ function url_encode() {
 
 # url_decode(string)
 function url_decode() {
-	echo -ne "$(sed -E 's/%[0-1][0-9a-f]//g;s/%/\\x/g;s/\+/ /g' <<< "$1")"
+	# we should probably fail on invalid data here,
+	# but this function is kinda sorta infallible right now
+
+	local t=$'\01'
+	local a="${1//$t}" # strip all of our control chrs for safety
+	a="${1//+/ }" # handle whitespace
+	a="${a//%[A-Fa-f0-9][A-Fa-f0-9]/$t&}" # match '%xx', prepend with token
+	echo -ne "${a//$t%/\\x}" # replace the above with '\\x' and evaluate
 }
 
 # bogus function!
