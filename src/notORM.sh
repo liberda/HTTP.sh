@@ -48,7 +48,7 @@ data_add() {
 	local IFS=$'\n'
 
 	for i in "${ref[@]}"; do
-		trim_control "$i"
+		_trim_control "$i"
 		res+="$tr$delim"
 	done
 
@@ -92,8 +92,9 @@ data_iter() {
 	local r=1
 
 	while read line; do
-		local IFS=$delim
+		IFS=$delim
 		data=(${line//$'\x02'/$line})
+		IFS=
 		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
 		[[ $? == 255 ]] && return 255
 		r=0
@@ -139,7 +140,7 @@ data_replace() {
 	local IFS=' '
 	
 	for i in "${ref[@]}"; do
-		trim_control "$i"
+		_trim_control "$i"
 		output+="$tr"
 	done
 	
@@ -172,7 +173,7 @@ data_yeet() {
 }
 
 _sed_sanitize() {
-	trim_control "$1"
+	_trim_control "$1"
 	echo -n "$tr" | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'
 }
 
