@@ -40,13 +40,16 @@ if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS
 	[[ "${r[method],,}" != "get" ]] && r[post]=true
 	r[url]="$(sed -E 's/^ *//;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
 	unset IFS
-	while read -d'&' i; do
-		name="${i%%=*}"
-		if [[ "$name" ]]; then
-			value="${i#*=}"
-			get_data[$name]="$value"
-		fi
-	done <<< "${r[url]#*\?}&"
+
+	if [[ "${r[url]}" == *'?'* ]]; then
+		while read -d'&' i; do
+			name="${i%%=*}"
+			if [[ "$name" ]]; then
+				value="${i#*=}"
+				get_data[$name]="$value"
+			fi
+		done <<< "${r[url]#*\?}&"
+	fi
 
 else
 	exit 1 # TODO: throw 400 here
@@ -56,29 +59,31 @@ fi
 while read -r param; do
 	[[ "$param" == $'\r' ]] && break
 	r[req_headers]+="$param"
-	param="${param##+( )}" # strip beginning whitespace
-	param="${param%%+( )*($'\r')}" # ... and the end whitespace
+	param="${param##*( )}" # strip beginning whitespace
+	param="${param%%*( )*($'\r')}" # ... and the end whitespace
 	name=''
 	value=''
 	data=''
 	unset IFS
 
 	# TODO: think about refactoring those ifs; maybe we *don't* need to have a header "allowlist" afterall...
+	# TODO: some of those options are... iffy wrt case sensitiveness
 
 	if [[ "$param" == "content-length:"* ]]; then
-		r[content_length]="${param#content-length:*( )}"
+		r[content_length]="${param#*:*( )}"
+		declare -p param >/dev/stderr
 
 	elif [[ "$param" == "content-type:"* ]]; then
-		r[content_type]="${param#content-type:*( )}"
+		r[content_type]="${param#*:*( )}"
 		if [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
 			tmpdir=$(mktemp -d)
 		fi
 		if [[ "${r[content_type]}" == *"boundary="* ]]; then
 			r[content_boundary]="${r[content_type]##*boundary=}"
 		fi
-		
+
 	elif [[ "$param" == "host:"* ]]; then
-		r[host]="${param#host:*( )}"
+		r[host]="${param#*:*( )}"
 		r[host_portless]="${r[host]%%:*}"
 		if [[ -f "config/$(basename -- ${r[host]})" ]]; then
 			source "config/$(basename -- ${r[host]})"
@@ -87,19 +92,19 @@ while read -r param; do
 		fi
 
 	elif [[ "$param" == "user-agent:"* ]]; then
-		r[user_agent]="{param/user-agent:*( )}"
-		
+		r[user_agent]="${param#*:*( )}"
+
 	elif [[ "$param" == "upgrade:"* && "${param/upgrade:}" == *"websocket"* ]]; then
 		r[status]=101
-		
+
 	elif [[ "$param" == "sec-websocket-key:"* ]]; then
-		r[websocket_key]="${param#sec-websocket-key:*( )}"
-		
+		r[websocket_key]="${param#*:*( )}"
+
 	elif [[ "$param" == "authorization: basic"* ]]; then
 		login_simple "$param"
-		
+
 	elif [[ "$param" == "authorization: bearer"* ]]; then
-		r[authorization]="${param#authorization:*( )bearer*( )}"
+		r[authorization]="${param#*:*( )[Bb]earer*( )}"
 
 	elif [[ "$param" == "cookie: "* ]]; then
 		while read -d';' i; do
@@ -109,15 +114,15 @@ while read -r param; do
 			if [[ "$name" ]]; then
 				# get value, strip potential whitespace
 				value="${i#*=}"
-				value="${value##+( )}"
-				value="${value%%+( )}"
+				value="${value##*( )}"
+				value="${value%%*( )}"
 				cookies[$name]="$value"
 			fi
-		done <<< "${param//cookie:}"
+		done <<< "${param//cookie:};"
 
 	elif [[ "$param" == "range: bytes="* ]]; then
-		r[range]="$(sed 's/Range: bytes=//;s/\r//' <<< "$param")"
-	fi		
+		r[range]="${param#*=}"
+	fi
 done
 
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
@@ -202,10 +207,10 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		declare post_multipart
 		tmpfile=$(mktemp -p $tmpdir)
 		dd iflag=fullblock of=$tmpfile ibs=${r[content_length]} count=1 obs=1M
-		
+
 		delimeter_len=$(echo -n "${r[content_boundary]}"$'\015' | wc -c)
 		boundaries_list=$(echo -ne $(grep $tmpfile -ao -e ${r[content_boundary]} --byte-offset | sed -E 's/:(.*)//g') | sed -E 's/ [0-9]+$//')
-		
+
 		for i in $boundaries_list; do
 			tmpout=$(mktemp -p $tmpdir)
 			dd iflag=fullblock if=$tmpfile ibs=$(($i+$delimeter_len)) obs=1M skip=1 | while true; do
@@ -226,13 +231,13 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		read -r -N "${r[content_length]}" data
 
 		unset IFS
-		while read -d'&' i; do
+		while read -r -d'&' i; do
 			name="${i%%=*}"
-			if [[ "$name" ]]; then
-				param="${i#*=}"
-				post_data[$name]="$param"
-			fi
-		done <<< "$(tr -d '\n' <<< "$data")&"
+			value="${i#*=}"
+			post_data[$name]="$value"
+			echo post_data[$name]="$value" >/dev/stderr
+
+		done <<< "${data}&"
 	fi
 fi
 
