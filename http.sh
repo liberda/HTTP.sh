@@ -54,6 +54,8 @@ cfg[mail_ignore_bad_cert]=false
 
 # unset for legacy sha256sum hashing (not recommended)
 cfg[hash]="argon2id"
+
+cfg[cookie_path]="/"
 EOF
 fi
 
