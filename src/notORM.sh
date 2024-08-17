@@ -141,7 +141,7 @@ data_replace() {
 	
 	for i in "${ref[@]}"; do
 		_trim_control "$i"
-		output+="$tr"
+		output+="$tr$delim"
 	done
 	
 	if [[ $column == 0 ]]; then
