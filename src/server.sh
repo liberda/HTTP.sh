@@ -36,14 +36,15 @@ if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS
 	read -r param
 	[[ "${r[method],,}" != "get" ]] && r[post]=true
 	r[url]="$(sed -E 's/^ *//;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
-	IFS='&'
-	for i in ${r[url]#*\?}; do
-		name="$(url_decode "${i%%=*}")"
-		value="$(url_decode "${i#*=}")"
-		get_data[$name]="$value"
-	done
 	unset IFS
-	
+	while read -d'&' i; do
+		name="${i%%=*}"
+		if [[ "$name" ]]; then
+			value="${i#*=}"
+			get_data[$name]="$value"
+		fi
+	done <<< "${r[url]#*\?}&"
+
 else
 	exit 1 # TODO: throw 400 here
 fi
