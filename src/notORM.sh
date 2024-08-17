@@ -48,7 +48,8 @@ data_add() {
 	local IFS=$'\n'
 
 	for i in "${ref[@]}"; do
-		res+="$(echo -n "$i" | tr -d '\01\02\03' | tr '\n' '\02')"$delim
+		trim_control "$i"
+		res+="$tr$delim"
 	done
 
 	echo "$res" >> "$1" # TODO: some locking
@@ -68,7 +69,7 @@ data_get() {
 
 	while read line; do
 		local IFS=$delim
-		ref=($(tr '\02' '\n' <<< "$line"))
+		ref=(${line//$'\x02'/$'\n'})
 		[[ "${ref[$column]}" == "$2" ]] && return 0
 	done < "$1"
 
@@ -92,7 +93,7 @@ data_iter() {
 
 	while read line; do
 		local IFS=$delim
-		data=($(tr '\02' '\n' <<< "$line"))
+		data=(${line//$'\x02'/$line})
 		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
 		[[ $? == 255 ]] && return 255
 		r=0
@@ -134,10 +135,12 @@ data_replace() {
 	local column=${4:-0}
 	local -n ref="$3"
 	local output=
+	local tr
 	local IFS=' '
 	
 	for i in "${ref[@]}"; do
-		output+="$(echo -n "$i" | tr -d '\01\02\03' | tr '\n' '\02')$delim" # TODO: check if this is arbitrary safe
+		trim_control "$i"
+		output+="$tr"
 	done
 	
 	if [[ $column == 0 ]]; then
@@ -169,10 +172,18 @@ data_yeet() {
 }
 
 _sed_sanitize() {
-	echo -n "$1" | tr -d '\01\02\03' | tr '\n' '\02' | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'	
+	trim_control "$1"
+	echo -n "$tr" | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'
 }
 
 _sed_sanitize_array() {
-	echo -n "$1" | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'	
+	echo -n "$1" | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'
 }
 
+# _trim_control(string) -> $tr
+_trim_control() {
+	tr="${1//$delim}"                # remove 0x01
+	tr="${tr//$newline}"             # remove 0x02
+	tr="${tr//$ctrl}"                # remove 0x03
+	tr="${tr//$'\n'/$newline}$delim" # \n -> 0x02
+}
