@@ -68,8 +68,13 @@ data_get() {
 	local IFS=$'\n'
 
 	while read line; do
-		local IFS=$delim
-		ref=(${line//$'\x02'/$'\n'})
+		IFS=$delim
+		
+		# LOAD-BEARING!!
+		# without an intermediate variable, bash trims out empty
+		# objects. expansions be damned
+		local x="${line//$newline/$'\n'}"
+		ref=($x)
 		[[ "${ref[$column]}" == "$2" ]] && return 0
 	done < "$1"
 
@@ -79,7 +84,7 @@ data_get() {
 # run `callback` on all entries from `store` that match `search`.
 # by default uses the 0th column. override with optional `column`
 #
-# immediately exits with 1 if the callback function returned 255
+# immediately exits with 255 if the callback function returned 255
 # if there were no matches, returns 2
 # if the store wasn't found, returns 4
 #
@@ -93,7 +98,10 @@ data_iter() {
 
 	while read line; do
 		IFS=$delim
-		data=(${line//$'\x02'/$line})
+		
+		# LOAD BEARING; see data_get
+		local x="${line//$newline/$'\n'}"
+		data=($x)
 		IFS=
 		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
 		[[ $? == 255 ]] && return 255

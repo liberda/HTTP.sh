@@ -25,7 +25,7 @@ function register() {
 
 	_password_hash "$2" "$salt"
 
-	local out=("$username" "$hash" "$salt" "." "${extra[@]}")
+	local out=("$username" "$hash" "$salt" "" "${extra[@]}")
 	data_add secret/users.dat out
 
 	_new_session "$username"
@@ -116,6 +116,7 @@ function logout() {
 function session_verify() {
 	[[ ! "$1" ]] && return 1
 	unset IFS
+	local session
 	local user
 
 	if data_get secret/sessions.dat "$1" 2 session; then
@@ -155,14 +156,13 @@ user_reset_password() {
 	[[ ! "$2" ]] && return 1 # there's probably a better way,
 	[[ ! "$3" ]] && return 1 # but i don't care.
 
-	[[ "$2" == '.' ]] && return 1
 	local user
 	if data_get secret/users.dat "$1" 0 user; then
 
 		if [[ "$2" == "${user[3]}" ]]; then
 			_password_hash "$3" "${user[2]}"
 			user[1]="$hash"
-			user[3]='.'
+			user[3]=''
 
 			data_replace secret/users.dat "$1" user
 
