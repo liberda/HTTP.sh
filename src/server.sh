@@ -4,6 +4,7 @@
 if [[ "$1" == true ]]; then
     set -x
 fi
+shopt -s extglob
 
 source config/master.sh
 source src/mime.sh
@@ -31,6 +32,8 @@ post_length=0
 # we're reading up to 8 characters and waiting for a space.
 read -d' ' -r -n8 param
 
+shopt -s nocasematch # only for initial parse; saves us *many* sed calls
+
 if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS, HEAD
 	r[method]="${param%% *}"
 	read -r param
@@ -51,63 +54,68 @@ fi
 
 # continue with reading the headers
 while read -r param; do
+	[[ "$param" == $'\r' ]] && break
 	r[req_headers]+="$param"
-	param_l="${param,,}" # lowercase
+	param="${param##+( )}" # strip beginning whitespace
+	param="${param%%+( )*($'\r')}" # ... and the end whitespace
 	name=''
 	value=''
 	data=''
 	unset IFS
 
 	# TODO: think about refactoring those ifs; maybe we *don't* need to have a header "allowlist" afterall...
-	
-	if [[ "$param_l" == $'\015' ]]; then
-		break
-		
-	elif [[ "$param_l" == "content-length:"* ]]; then
-		r[content_length]="$(sed 's/Content-Length: //i;s/\r//' <<< "$param")"
 
-	elif [[ "$param_l" == "content-type:"* ]]; then
-		r[content_type]="$(sed 's/Content-Type: //i;s/\r//' <<< "$param")"
+	if [[ "$param" == "content-length:"* ]]; then
+		r[content_length]="${param#content-length:*( )}"
+
+	elif [[ "$param" == "content-type:"* ]]; then
+		r[content_type]="${param#content-type:*( )}"
 		if [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
 			tmpdir=$(mktemp -d)
 		fi
 		if [[ "${r[content_type]}" == *"boundary="* ]]; then
-			r[content_boundary]="$(sed -E 's/(.*)boundary=//i;s/\r//;s/ //' <<< "${r[content_type]}")"
+			r[content_boundary]="${r[content_type]##*boundary=}"
 		fi
 		
-	elif [[ "$param_l" == "host:"* ]]; then
-		r[host]="$(sed 's/Host: //i;s/\r//;s/\\//g' <<< "$param")"
-		r[host_portless]="$(sed -E 's/:(.*)$//' <<< "${r[host]}")"
+	elif [[ "$param" == "host:"* ]]; then
+		r[host]="${param#host:*( )}"
+		r[host_portless]="${r[host]%%:*}"
 		if [[ -f "config/$(basename -- ${r[host]})" ]]; then
 			source "config/$(basename -- ${r[host]})"
 		elif [[ -f "config/$(basename -- ${r[host_portless]})" ]]; then
 			source "config/$(basename -- ${r[host_portless]})"
 		fi
 
-	elif [[ "$param_l" == "user-agent:"* ]]; then
-		r[user_agent]="$(sed 's/User-Agent: //i;s/\r//;s/\\//g' <<< "$param")"
+	elif [[ "$param" == "user-agent:"* ]]; then
+		r[user_agent]="{param/user-agent:*( )}"
 		
-	elif [[ "$param_l" == "upgrade:"* && $(sed 's/Upgrade: //i;s/\r//' <<< "$param") == "websocket" ]]; then
+	elif [[ "$param" == "upgrade:"* && "${param/upgrade:}" == *"websocket"* ]]; then
 		r[status]=101
 		
-	elif [[ "$param_l" == "sec-websocket-key:"* ]]; then
-		r[websocket_key]="$(sed 's/Sec-WebSocket-Key: //i;s/\r//' <<< "$param")"
+	elif [[ "$param" == "sec-websocket-key:"* ]]; then
+		r[websocket_key]="${param#sec-websocket-key:*( )}"
 		
-	elif [[ "$param_l" == "authorization: basic"* ]]; then
+	elif [[ "$param" == "authorization: basic"* ]]; then
 		login_simple "$param"
 		
-	elif [[ "$param_l" == "authorization: bearer"* ]]; then
-		r[authorization]="$(sed 's/Authorization: Bearer //i;s/\r//' <<< "$param")"
+	elif [[ "$param" == "authorization: bearer"* ]]; then
+		r[authorization]="${param#authorization:*( )bearer*( )}"
 
-	elif [[ "$param_l" == "cookie: "* ]]; then
-		IFS=';'
-		for i in $(IFS=' '; echo "$param" | sed -E 's/Cookie: //i;;s/%/\\x/g'); do
-			name="$((grep -Poh "[^ ].*?(?==)" | head -1) <<< $i)"
-			value="$(sed "s/$name=//;s/^ //;s/ $//" <<< $i)"
-			cookies[$name]="$(echo -e $value)"
-		done
+	elif [[ "$param" == "cookie: "* ]]; then
+		while read -d';' i; do
+			i="$(url_decode "$i")"
+			name="${i%%=*}"
 
-	elif [[ "$param_l" == "range: bytes="* ]]; then
+			if [[ "$name" ]]; then
+				# get value, strip potential whitespace
+				value="${i#*=}"
+				value="${value##+( )}"
+				value="${value%%+( )}"
+				cookies[$name]="$value"
+			fi
+		done <<< "${param//cookie:}"
+
+	elif [[ "$param" == "range: bytes="* ]]; then
 		r[range]="$(sed 's/Range: bytes=//;s/\r//' <<< "$param")"
 	fi		
 done
@@ -124,6 +132,8 @@ else
 	r[proto]='https'
 	r[ip]="$NCAT_REMOTE_ADDR:$NCAT_REMOTE_PORT"
 fi
+
+shopt -u nocasematch
 
 echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}, UA: ${r[user_agent]}" >> "${cfg[namespace]}/${cfg[log]}"
 

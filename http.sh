@@ -78,6 +78,7 @@ done < src/dependencies.optional
 
 if [[ "$1" == 'shell' ]]; then
 	bash --rcfile <(echo '
+	shopt -s extglob
 	x() { declare -p data;} # for notORM
 	source config/master.sh
 	source src/account.sh
