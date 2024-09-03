@@ -78,6 +78,7 @@ data_get() {
 		[[ "${ref[$column]}" == "$2" ]] && return 0
 	done < "$1"
 
+	unset ref
 	return 2
 }
 
