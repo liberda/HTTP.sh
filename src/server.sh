@@ -25,6 +25,7 @@ declare -A params # parsed router data
 
 r[status]=210 # Mommy always said that I was special
 r[req_headers]=''
+r[payload_type]=none # placeholder
 post_length=0
 
 # start reading the stream here instead of the loop below;
@@ -71,11 +72,14 @@ while read -r param; do
 
 	if [[ "$param" == "content-length:"* ]]; then
 		r[content_length]="${param#*:*( )}"
-		declare -p param >/dev/stderr
 
 	elif [[ "$param" == "content-type:"* ]]; then
 		r[content_type]="${param#*:*( )}"
-		if [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
+		if [[ "${r[content_type]}" == *"urlencoded" ]]; then
+			r[payload_type]="urlencoded" # TODO: do we want to have a better indicator for this?
+			
+		elif [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
+			r[payload_type]="multipart"
 			tmpdir=$(mktemp -d)
 		fi
 		if [[ "${r[content_type]}" == *"boundary="* ]]; then
@@ -230,14 +234,19 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 	else
 		read -r -N "${r[content_length]}" data
 
-		unset IFS
-		while read -r -d'&' i; do
-			name="${i%%=*}"
-			value="${i#*=}"
-			post_data[$name]="$value"
-			echo post_data[$name]="$value" >/dev/stderr
+		if [[ "${r[payload_type]}" == "urlencoded" ]]; then
+			unset IFS
+			while read -r -d'&' i; do
+				name="${i%%=*}"
+				value="${i#*=}"
+				post_data[$name]="$value"
+				echo post_data[$name]="$value" >/dev/stderr
 
-		done <<< "${data}&"
+			done <<< "${data}&"
+		else
+			# this is fine?
+			post_data[0]="${data%\&}"
+		fi
 	fi
 fi
 
