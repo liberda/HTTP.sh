@@ -24,6 +24,14 @@ function get_mime() {
 			mimetype="text/css"
 		elif [[ $mime == "text/"* && $mime != "text/xml" ]]; then
 			mimetype="text/plain"
+        # Technically image/x-icon isn't correct for all images (image/ico also exists) but 
+        # it's what browser (firefox (sample size: 1)) seem to have the least problems with.
+        # image/vnd.microsoft.icon was standardized by the IANA but no microsoft software
+        # understands it, they use image/ico instead. What a mess.
+        elif [[ $file == *"favicon.ico" ]]; then
+            mimetype="image/x-icon"
+        elif [[ $file == *".ico" || $mime == "image/vnd.microsoft.icon" ]]; then
+            mimetype="image/ico"
 		else
 			mimetype="$mime"
 		fi
