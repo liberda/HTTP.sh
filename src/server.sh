@@ -56,78 +56,92 @@ else
 	exit 1 # TODO: throw 400 here
 fi
 
+declare -A headers
+
+IFS=$'\n'
 # continue with reading the headers
 while read -r param; do
 	[[ "$param" == $'\r' ]] && break
-	r[req_headers]+="$param"
-	param="${param##*( )}" # strip beginning whitespace
-	param="${param%%*( )*($'\r')}" # ... and the end whitespace
-	name=''
-	value=''
-	data=''
+
+    IFS=':'
+    read -ra header_pair <<< "$param"
+    header_key="${header_pair[0],,}" # To lowercase...
+    header_key="${header_key##*( )}" # ...trim leading whitespace...
+    header_key="${header_key%%*( )}" # ...and trailing whitespaces
+
+    header_value="${header_pair[@]:1}"
+    header_value="${header_value##*( )}" # Trim leading whitespace...
+    headers["${header_key}"]="${header_value%%*( )*($'\r')}" # ...and trailing whitespace and \r
+
 	unset IFS
-
-	# TODO: think about refactoring those ifs; maybe we *don't* need to have a header "allowlist" afterall...
-	# TODO: some of those options are... iffy wrt case sensitiveness
-
-	if [[ "$param" == "content-length:"* ]]; then
-		r[content_length]="${param#*:*( )}"
-
-	elif [[ "$param" == "content-type:"* ]]; then
-		r[content_type]="${param#*:*( )}"
-		if [[ "${r[content_type]}" == *"urlencoded" ]]; then
-			r[payload_type]="urlencoded" # TODO: do we want to have a better indicator for this?
-			
-		elif [[ "${r[content_type]}" == *"multipart/form-data"* ]]; then
-			r[payload_type]="multipart"
-			tmpdir=$(mktemp -d)
-		fi
-		if [[ "${r[content_type]}" == *"boundary="* ]]; then
-			r[content_boundary]="${r[content_type]##*boundary=}"
-		fi
-
-	elif [[ "$param" == "host:"* ]]; then
-		r[host]="${param#*:*( )}"
-		r[host_portless]="${r[host]%%:*}"
-		if [[ -f "config/$(basename -- ${r[host]})" ]]; then
-			source "config/$(basename -- ${r[host]})"
-		elif [[ -f "config/$(basename -- ${r[host_portless]})" ]]; then
-			source "config/$(basename -- ${r[host_portless]})"
-		fi
-
-	elif [[ "$param" == "user-agent:"* ]]; then
-		r[user_agent]="${param#*:*( )}"
-
-	elif [[ "$param" == "upgrade:"* && "${param/upgrade:}" == *"websocket"* ]]; then
-		r[status]=101
-
-	elif [[ "$param" == "sec-websocket-key:"* ]]; then
-		r[websocket_key]="${param#*:*( )}"
-
-	elif [[ "$param" == "authorization: basic"* ]]; then
-		login_simple "$param"
-
-	elif [[ "$param" == "authorization: bearer"* ]]; then
-		r[authorization]="${param#*:*( )[Bb]earer*( )}"
-
-	elif [[ "$param" == "cookie: "* ]]; then
-		while read -d';' i; do
-			i="$(url_decode "$i")"
-			name="${i%%=*}"
-
-			if [[ "$name" ]]; then
-				# get value, strip potential whitespace
-				value="${i#*=}"
-				value="${value##*( )}"
-				value="${value%%*( )}"
-				cookies[$name]="$value"
-			fi
-		done <<< "${param//cookie:};"
-
-	elif [[ "$param" == "range: bytes="* ]]; then
-		r[range]="${param#*=}"
-	fi
 done
+
+r[content_length]="${headers["content-length"]}"
+r[user_agent]="${headers["user-agent"]}"
+r[websocket_key]="${headers["sec-websocket-key"]}"
+
+if [[ -n "${headers["content-type"]}" ]]; then
+    IFS=';'
+    read -ra content_type <<< "${headers["content-type"]}"
+    r[content_type]="${content_type[0]}"
+
+    if [[ "${r[content_type]}" == "application/x-www-form-urlencoded" ]]; then
+		r[payload_type]="urlencoded" # TODO: do we want to have a better indicator for this?
+	elif [[ "${r[content_type]}" == "multipart/form-data" ]]; then
+		r[payload_type]="multipart"
+		tmpdir=$(mktemp -d)
+
+        if [[ "${r[content_type]}" == "boundary="* ]]; then
+            boundary="${content_type[@]:1}"
+		    r[content_boundary]="${boundary##*boundary=}"
+	    fi
+	fi
+fi
+
+if [[ -n "${headers["host"]}" ]]; then
+    r[host]="${headers["host"]}"
+    r[host_portless]="${headers["host"]%%:*}"
+
+    if [[ -f "config/$(basename -- ${r[host]})" ]]; then
+	    source "config/$(basename -- ${r[host]})"
+	elif [[ -f "config/$(basename -- ${r[host_portless]})" ]]; then
+		source "config/$(basename -- ${r[host_portless]})"
+	fi
+fi
+
+if [[ "${headers["connection"]}" == "upgrade" && "${headers["upgrade"]}" == "websocket" ]]; then
+    r[status]=101
+fi
+
+if [[ -n "${headers["authorization"]}" ]]; then
+    if [[ "${headers["authorization"],,}" == "basic"* ]]; then
+        base64="${headers["authorization"]#[Bb]asic*( )}"
+        login_simple "${base64##*( )}"
+    elif [[ "${headers["authorization"],,}" == "bearer"* ]]; then
+        bearer="${headers["authorization"]#[Bb]earer*( )}"
+        r[authorization]="${bearer##*( )}"
+    fi
+fi
+
+if [[ -n "${headers["cookie"]}" ]]; then
+    while read -r -d';' cookie_pair; do
+        cookie_pair="$(url_decode "$cookie_pair")"
+		name="${cookie_pair%%=*}"
+		if [[ -n "$name" ]]; then
+            # get value, strip potential whitespace
+            value="${cookie_pair##*=}"
+            value="${value##*( )}"
+            value="${value%%*( )}"
+            cookies[$name]="$value"
+        fi
+    done <<< "${headers["cookie"]};" # This hack is beyond me, just trust the process
+fi
+
+if [[ "${headers["range"]}" == "bytes"* ]]; then
+    r[range]="${headers["range"]#*=}"
+fi
+
+r[req_headers]="$headers"
 
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
 
