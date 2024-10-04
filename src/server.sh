@@ -148,7 +148,10 @@ r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
 r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
-if [[ $NCAT_LOCAL_PORT == '' ]]; then
+if [[ ${headers["x-forwarded-for"]} ]]; then
+    r[proto]='http'
+    r[ip]="${headers["x-forwarded-for"]}"
+elif [[ -z "$NCAT_LOCAL_PORT" ]]; then
 	r[proto]='http'
 	r[ip]="NCAT_IS_BORK"
 else
