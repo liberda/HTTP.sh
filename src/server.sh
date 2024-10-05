@@ -62,6 +62,7 @@ IFS=$'\n'
 # continue with reading the headers
 while read -r param; do
 	[[ "$param" == $'\r' ]] && break
+	[[ "$param" != *":"* ]] && exit 1 # TODO: throw 400
 
     IFS=':'
     read -ra header_pair <<< "$param"
@@ -72,9 +73,8 @@ while read -r param; do
     header_value="${header_pair[@]:1}"
     header_value="${header_value##*( )}" # Trim leading whitespace...
     headers["${header_key}"]="${header_value%%*( )*($'\r')}" # ...and trailing whitespace and \r
-
-	unset IFS
 done
+unset IFS
 
 r[content_length]="${headers["content-length"]}"
 r[user_agent]="${headers["user-agent"]}"
