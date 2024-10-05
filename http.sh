@@ -41,10 +41,6 @@ cfg[python_enabled]=false # enable Python script evalutaion (requires Python)
 
 cfg[log]='log' # filename
 
-cfg[proxy]=false # you probably want to configure this per-url
-cfg[proxy_url]='' # regexp matching valid URLs to proxy
-cfg[proxy_param]='url' # /proxy?url=...
-
 # mail handler config
 cfg[mail]=""
 cfg[mail_server]=""

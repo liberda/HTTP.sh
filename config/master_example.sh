@@ -30,10 +30,6 @@ cfg[python_enabled]=false # enable Python script evalutaion (requires Python)
 
 cfg[log]='log' # filename
 
-# proxy functionality is very WiP
-cfg[proxy]=false
-cfg[proxy_url]='http://example.com/'
-
 # mail handler config
 cfg[mail]=""
 cfg[mail_server]=""

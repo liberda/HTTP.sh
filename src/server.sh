@@ -215,10 +215,6 @@ if [[ "${cfg[auth_required]}" == true && "${r[authorized]}" != true ]]; then
 	r[status]=401
 fi
 
-if [[ "${cfg[proxy]}" == true ]]; then
-	r[status]=211
-fi
-
 if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 212 ]]; then
 	# This whole ordeal is here to prevent passing binary data as a variable.
 	# I could have done it as an array, but this solution works, and it's
@@ -269,8 +265,6 @@ fi
 
 if [[ ${r[status]} == 210 && ${cfg[autoindex]} == true ]]; then
 	source "src/response/listing.sh"
-elif [[ ${r[status]} == 211 ]]; then
-	source "src/response/proxy.sh"
 elif [[ ${r[status]} == 200 || ${r[status]} == 212 ]]; then
 	source "src/response/200.sh"
 elif [[ ${r[status]} == 401 ]]; then
