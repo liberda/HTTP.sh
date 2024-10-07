@@ -21,12 +21,10 @@ cfg[ssl_cert]=''
 cfg[ssl_key]=''
 
 cfg[extension]='shs'
+#cfg[encoding]='UTF-8' # UTF-8 by default, used by iconv
 cfg[extra_headers]="server: HTTP.sh/$HTTPSH_VERSION (devel)"
 
 cfg[title]="HTTP.sh $HTTPSH_VERSION"
-
-cfg[php_enabled]=false # enable PHP script evalutaion (requires PHP)
-cfg[python_enabled]=false # enable Python script evalutaion (requires Python)
 
 cfg[log]='log' # filename
 

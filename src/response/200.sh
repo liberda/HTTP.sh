@@ -40,26 +40,12 @@ if [[ ${r[status]} == 212 ]]; then
 		cat $temp
 		rm $temp
 	fi
-	
-elif [[ "${cfg[php_enabled]}" == true && "${r[uri]}" =~ ".php" ]]; then
-	temp=$(mktemp)
-	php "${r[uri]}" "$(get_dump)" "$(post_dump)" > $temp
-	__headers
-	cat $temp
-	rm $temp
-
-elif [[ "${cfg[python_enabled]}" == true && "${r[uri]}" =~ ".py" ]]; then
-	temp=$(mktemp)
-	python "${r[uri]}" "$(get_dump)" "$(post_dump)" > $temp
-	__headers
-	cat $temp
-	rm $temp
 
 elif [[ "${r[uri]}" =~ \.${cfg[extension]}$ ]]; then
 	temp=$(mktemp)
 	source "${r[uri]}" > $temp
 	__headers
-	if [[ "${cfg[encoding]}" != '' ]]; then
+	if [[ "${cfg[encoding]}" ]]; then
 		iconv $temp -f UTF-8 -t "${cfg[encoding]}"
 	else
 		cat $temp
