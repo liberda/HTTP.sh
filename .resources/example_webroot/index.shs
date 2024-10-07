@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+source templates/head.sh
+echo "<h1>Hello from HTTP.sh!</h1><br>To get started with your app, check out $(pwd)/${cfg[namespace]}/
+	 <ul><li>$(pwd)/${cfg[namespace]}/${cfg[root]} - your (public) files go here</li>
+	 <li>$(pwd)/${cfg[namespace]}/workers/ - worker directory, with an example one ready to go</li>
+	 <li>$(pwd)/${cfg[namespace]}/views/ - individual views can be stored there, to be later referenced by routes.sh</li>
+	 <li>$(pwd)/${cfg[namespace]}/templates/ - template files live over there</li>
+	 <li>$(pwd)/${cfg[namespace]}/config.sh - config for everything specific to your app AND workers</li>
+	 <li>$(pwd)/${cfg[namespace]}/routes.sh - config for the HTTP.sh router</li></ul>
+	 Fun things outside of the app directory:
+	 <ul><li>$(pwd)/config/master.sh - master server config</li>
+	 <li>$(pwd)/config/<hostname> - config loaded if a request is made to a specific hostname</li>
+	 <li>$(pwd)/storage/ - directory for storing all and any data your app may produce</li>
+	 <li>$(pwd)/secret/ - user accounts and other secret tokens live here</li>
+	 <li>$(pwd)/src/ - HTTP.sh src, feel free to poke around ;P</li></ul>"

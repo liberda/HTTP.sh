@@ -6,6 +6,7 @@ if [[ "$1" == true ]]; then
 fi
 shopt -s extglob
 
+source src/version.sh
 source config/master.sh
 source src/mime.sh
 source src/misc.sh
