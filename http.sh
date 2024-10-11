@@ -6,6 +6,15 @@ ctrl_c() {
 	echo -e "Cleaned up, exitting.\nHave an awesome day!!"
 }
 
+setup_config() {
+	[[ ! "$1" ]] && namespace=app || namespace="$1"
+
+	mkdir -p config
+	cp ".resources/primary_config.sh" "config/master.sh"
+	echo "cfg[namespace]=$namespace # default namespace" >> "config/master.sh"
+	echo "cfg[init_version]=$HTTPSH_VERSION" >> "config/master.sh"
+}
+
 if [[ ! -f "$PWD/http.sh" ]]; then
 		echo -e "Please run HTTP.sh inside its designated directory\nRunning the script from arbitrary locations isn't supported."
 		exit 1
@@ -16,10 +25,7 @@ if [[ "$1" == "init" ]]; then # will get replaced with proper parameter parsing 
 	[[ ! "$2" ]] && namespace=app || namespace="$2"
 
 	if [[ ! -f "config/master.sh" ]]; then
-		mkdir -p config
-		cp ".resources/primary_config.sh" "config/master.sh"
-		echo "cfg[namespace]=$namespace # default namespace" >> "config/master.sh"
-		echo "cfg[init_version]=$HTTPSH_VERSION" >> "config/master.sh"
+		setup_config
 	elif [[ -d "$namespace" ]]; then
 		echo -e "ERR: HTTP.sh has been initialized before.\nSpecify a new namespace directory, or perish (remove '$namespace'?)"
 		exit 1
@@ -40,8 +46,12 @@ if [[ "$1" == "init" ]]; then # will get replaced with proper parameter parsing 
 	exit 0
 
 elif [[ ! -f "config/master.sh" ]]; then
-	echo "ERR: Initialize HTTP.sh first! run './http.sh init'"
-	exit 1
+	if [[ -d "app" ]]; then # if the de-facto default app dir already exists, copy the cfg
+		setup_config
+	else
+		echo "ERR: Initialize HTTP.sh first! run './http.sh init'"
+		exit 1
+	fi
 fi
 source config/master.sh
 
