@@ -48,7 +48,7 @@ if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS
 			name="${i%%=*}"
 			if [[ "$name" ]]; then
 				value="${i#*=}"
-				get_data[$name]="$value"
+				get_data[$name]="$(url_decode "$value")"
 			fi
 		done <<< "${r[url]#*\?}&"
 	fi
