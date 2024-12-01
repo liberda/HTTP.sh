@@ -21,7 +21,7 @@ function render() {
 
 			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
 
-			local -n asdf=${ref[$key]}
+			local -n asdf=${ref["$key"]}
 			local j
 			local value=''
 			for j in ${!asdf[@]}; do
@@ -33,8 +33,8 @@ function render() {
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 			rm "$subtemplate"
-		elif [[ "$key" == "@"* && "${ref[$key]}" != '' ]]; then
-			local value="$(sed -E 's/\&/�UwU�/g' <<< "${ref[$key]}")"
+		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
+			local value="$(sed -E 's/\&/�UwU�/g' <<< "${ref["$key"]}")"
 			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
@@ -50,12 +50,12 @@ function render() {
 			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
 
 			rm "$subtemplate"
-		elif [[ "${ref[$key]}" != "" ]]; then
-			echo "VALUE: ${ref[$key]}" > /dev/stderr
+		elif [[ "${ref["$key"]}" != "" ]]; then
+			echo "VALUE: ${ref["$key"]}" > /dev/stderr
 			if [[ "$3" != true ]]; then
-				local value="$(html_encode <<< "${ref[$key]}" | sed -E 's/\&/�UwU�/g')"
+				local value="$(html_encode <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
 			else
-				local value="$(echo -n "${ref[$key]}" | tr -d $'\01'$'\02' | tr $'\n' $'\01' | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
+				local value="$(echo -n "${ref["$key"]}" | tr -d $'\01'$'\02' | tr $'\n' $'\01' | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
 			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
 		else
@@ -105,14 +105,14 @@ function render_unsafe() {
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
 			# grep "start _test" -A99999 | grep "end _test" -B99999
-			local -n item_array=${ref[$key]}
+			local -n item_array=${ref["$key"]}
 			local value
 			for ((_i = 0; _i < ${#item_array[@]}; _i++)); do
 				value+="$(xxd -p <<< "${item_array[$_i]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
 			done
 			echo 's/\{\{'"$key"'\}\}/'"$value"'/g' >> "$tmp"
 		else
-			local value="$(xxd -p <<< "${ref[$key]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
+			local value="$(xxd -p <<< "${ref["$key"]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
 			echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
 		fi
 	done
@@ -136,13 +136,13 @@ function nested_declare() {
 # nested_add(ref, array)
 function nested_add() {
 	local nested_id=$(_nested_random)
-	declare -n nested_ref=$2
+	declare -n nested_ref="$2"
 	declare -g -A _$nested_id
 	
 	# poor man's array copy
 	IFS=' '
 	for k in ${!nested_ref[@]}; do
-		declare -g -A _$nested_id[$k]="${nested_ref[$k]}"
+		declare -g -A _$nested_id["$k"]="${nested_ref["$k"]}"
 	done
 	
 	local -n ref=$1
@@ -152,5 +152,5 @@ function nested_add() {
 # nested_get(ref, i)
 function nested_get() {
 	local -n ref=$1
-	declare -g -n res=_${ref[$2]}
+	declare -g -n res=_${ref["$2"]}
 }
