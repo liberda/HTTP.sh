@@ -84,7 +84,7 @@ r[user_agent]="${headers["user-agent"]}"
 r[websocket_key]="${headers["sec-websocket-key"]}"
 r[req_headers]="$headers"
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
-r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
+r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}/$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}") # dead code
 
 if [[ -n "${headers["content-type"]}" ]]; then
