@@ -77,9 +77,15 @@ while read -r param; do
 done
 unset IFS
 
+# TODO: remove deprecated fields below
+
 r[content_length]="${headers["content-length"]}"
 r[user_agent]="${headers["user-agent"]}"
 r[websocket_key]="${headers["sec-websocket-key"]}"
+r[req_headers]="$headers"
+r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
+r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
+[[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}") # dead code
 
 if [[ -n "${headers["content-type"]}" ]]; then
     IFS=';'
@@ -114,6 +120,8 @@ if [[ "${headers["connection"]}" == "upgrade" && "${headers["upgrade"]}" == "web
     r[status]=101
 fi
 
+shopt -u nocasematch
+
 if [[ -n "${headers["authorization"]}" ]]; then
     if [[ "${headers["authorization"],,}" == "basic"* ]]; then
         base64="${headers["authorization"]#[Bb]asic*( )}"
@@ -133,7 +141,7 @@ if [[ -n "${headers["cookie"]}" ]]; then
             value="${cookie_pair##*=}"
             value="${value##*( )}"
             value="${value%%*( )}"
-            cookies[$name]="$value"
+            cookies["$name"]="$value"
         fi
     done <<< "${headers["cookie"]};" # This hack is beyond me, just trust the process
 fi
@@ -141,13 +149,6 @@ fi
 if [[ "${headers["range"]}" == "bytes"* ]]; then
     r[range]="${headers["range"]#*=}"
 fi
-
-r[req_headers]="$headers"
-
-r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
-
-r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
-[[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}")
 
 if [[ ${headers["x-forwarded-for"]} ]]; then
     r[proto]='http'
@@ -159,8 +160,6 @@ else
 	r[proto]='https'
 	r[ip]="$NCAT_REMOTE_ADDR:$NCAT_REMOTE_PORT"
 fi
-
-shopt -u nocasematch
 
 echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${get_data[@]}, POST_data: ${post_data[@]}, POST_multipart: ${post_multipart[@]}, UA: ${r[user_agent]}" >> "${cfg[namespace]}/${cfg[log]}"
 
@@ -189,7 +188,7 @@ if [[ ${r[status]} != 101 ]]; then
 	if [[ ${r[status]} != 212 ]]; then
 		if [[ -a "${r[uri]}" && ! -r "${r[uri]}" ]]; then
 			r[status]=403
-		elif [[ "$(echo -n "${r[uri]}")" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
+		elif [[ "${r[uri]}" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
 			r[status]=403
 		elif [[ -f "${r[uri]}" ]]; then
 			r[status]=200
@@ -253,9 +252,8 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 			while read -r -d'&' i; do
 				name="${i%%=*}"
 				value="${i#*=}"
-				post_data[$name]="$value"
+				post_data[$name]="$(url_decode "$value")"
 				echo post_data[$name]="$value" >/dev/stderr
-
 			done <<< "${data}&"
 		else
 			# this is fine?
