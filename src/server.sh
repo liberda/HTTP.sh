@@ -152,7 +152,7 @@ fi
 
 if [[ ${headers["x-forwarded-for"]} ]]; then
     r[proto]='http'
-    r[ip]="${headers["x-forwarded-for"]}"
+    r[ip]="${headers["x-forwarded-for"]%%[, ]*}"
 elif [[ -z "$NCAT_LOCAL_PORT" ]]; then
 	r[proto]='http'
 	r[ip]="NCAT_IS_BORK"
