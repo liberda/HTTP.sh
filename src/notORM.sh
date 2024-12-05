@@ -59,14 +59,52 @@ data_add() {
 # by default uses the 0th column. override with optional `column`.
 # returns the data to $res. override with optional `res`
 #
-# data_get(store, search, [column], [res]) -> $res / ${!4}
+# 2nd and 3rd arguments can be repeated, given you enclose each pair
+# in curly braces. (e.g. `{ search } { search2 column2 }`)
+#
+# also can be used as `data_get store { } meow` to match all records 
+#
+# data_get(store, {search, [column]}, [res]) -> $res / ${!4}
 data_get() {
 	[[ ! "$2" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
-	local column=${3:-0}
-	local -n ref=${4:-res}
 	local IFS=$'\n'
 
+	local store="$1"
+	local search=()
+	local column=()
+	if [[ "$2" == '{' ]]; then
+		while shift; do # "shebang reference?" ~ mei
+			[[ "$1" != '{' ]] && break # yes, we need to match this twice
+			if [[ "$2" != '}' ]]; then
+				search+=("$2")
+			else # empty search - just match ANY record
+				search+=('')
+				column+=(0)
+				shift 2
+				break
+			fi
+			if [[ "$3" != '}' ]]; then
+				column+=("$3")
+				[[ "$4" != '}' ]] && return 1 # we accept only values in pairs
+				shift 3
+			else
+				column+=(0)
+				shift 2
+				if [[ "$2" != '{' ]]; then
+					shift
+					break
+				fi
+			fi
+		done
+		local -n ref="${1:-res}"
+	else # compat
+		search+=("$2")
+		column+=("${3:-0}")
+		local -n ref=${4:-res}
+	fi
+
+	local line
 	while read line; do
 		IFS=$delim
 		
@@ -75,8 +113,14 @@ data_get() {
 		# objects. expansions be damned
 		local x="${line//$newline/$'\n'}"
 		ref=($x)
-		[[ "${ref[$column]}" == "$2" ]] && return 0
-	done < "$1"
+		local i
+		for (( i=0; i<${#search[@]}; i++ )); do
+			if [[ "${ref[column[i]]}" != "${search[i]}" ]]; then
+				continue 2
+			fi
+		done
+		return 0 # only reached if an entry matched all constraints
+	done < "$store"
 
 	unset ref
 	return 2
