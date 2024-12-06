@@ -65,6 +65,26 @@ alias _data_parse_pairs='
 	done
 '
 
+# internal function. take search and column, generate a sed matching expr from them
+# data_gen_expr() -> $expr
+_data_gen_expr() {
+	# we need the pairs sorted due to how the sed expr generation works
+	local IFS=$'\01\n'
+	sorted=($(for (( i=0; i<${#search[@]}; i++ )); do
+		echo "${column[i]}"$'\01'"${search[i]}"
+	done | sort -n -t$'\01'))
+
+	local last=0
+	for (( i=0; i<${#sorted[@]}; i=i+2 )); do
+		if [[ $((sorted[i] - last)) -lt 1 ]]; then
+			expr+="$(_sed_sanitize "${sorted[i+1]}")${delim}"
+		else
+			expr+="$(repeat $((sorted[i] - last)) ".*$delim")$(_sed_sanitize "${sorted[i+1]}")${delim}"
+		fi
+		last="${sorted[i]}"
+	done
+}
+
 # adds a flat `array` to the `store`.
 # a store can be any file, as long as we have r/w access to it and the
 # adjacent directory.
@@ -97,7 +117,7 @@ data_add() {
 #
 # also can be used as `data_get store { } meow` to match all records 
 #
-# data_get(store, {search, [column]} [{search, [column]}], ... [res]]) -> $res / ${!-1}
+# data_get(store, { search, [column] }, ... [res]]) -> $res / ${!-1}
 # data_get(store, search, [column], [res]) -> $res / ${!4}
 data_get() {
 	[[ ! "$2" ]] && return 1
@@ -143,7 +163,7 @@ data_get() {
 # if there were no matches, returns 2
 # if the store wasn't found, returns 4
 #
-# data_iter(store, {search, [column]}, ... callback) -> $data
+# data_iter(store, { search, [column] }, ... callback) -> $data
 # data_iter(store, search, callback, [column]) -> $data
 data_iter() {
 	[[ ! "$3" ]] && return 1
@@ -212,30 +232,48 @@ data_replace_value() {
 data_replace() {
 	[[ ! "$3" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
-	local column=${4:-0}
-	local -n ref="$3"
+	local store="$1"
 	local output=
 	local tr
-	local IFS=' '
+
+	if [[ "$2" == '{' ]]; then
+		_data_parse_pairs
+
+		local -n ref="$1"
+
+		local expr
+		_data_gen_expr
+		expr="s$ctrl^${expr}.*$ctrl"
+	else
+		local column=${4:-0}
+		local -n ref="$3"
+		local IFS=' '
+
+		if [[ $column == 0 ]]; then
+			local expr="s$ctrl^$(_sed_sanitize "$2")${delim}.*$ctrl"
+		else
+			local expr="s$ctrl^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) ".*$delim")"'$'"$ctrl"
+		fi
+
+	fi
 	
 	for i in "${ref[@]}"; do
 		_trim_control "$i"
 		output+="$tr$delim"
 	done
-	
-	if [[ $column == 0 ]]; then
-		local expr="s$ctrl^$(_sed_sanitize "$2")${delim}.*$ctrl$(_sed_sanitize_array "$output")$ctrl"
-	else
-		local expr="s$ctrl^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) ".*$delim")"'$'"$ctrl$(_sed_sanitize_array "$output")$ctrl"
-	fi
 
-	sed -E -i "$expr" "$1"
+	expr+="$(_sed_sanitize_array "$output")$ctrl"
+
+	echo "$expr"
+
+	sed -E -i "$expr" "$store"
 }
 
 # deletes entries from the `store` using `search`.
 # by default uses the 0th column. override with optional `column`
 #
 # data_yeet(store, search, [column])
+# data_yeet(store, { search, [column] }, ...)
 data_yeet() {
 	[[ ! "$2" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
@@ -244,22 +282,8 @@ data_yeet() {
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
 
-		# we need the pairs sorted due to how the sed expr generation works
-		local IFS=$'\01\n'
-		sorted=($(for (( i=0; i<${#search[@]}; i++ )); do
-			echo "${column[i]}"$'\01'"${search[i]}"
-		done | sort -n -t$'\01'))
-
 		local expr
-		local last=0
-		for (( i=0; i<${#sorted[@]}; i=i+2 )); do
-			if [[ $((sorted[i] - last)) -le 1 ]]; then
-				expr+="$(_sed_sanitize "${sorted[i+1]}")${delim}"
-			else
-				expr+="$(repeat $((sorted[i] - last - 1)) ".*$delim")$(_sed_sanitize "${sorted[i+1]}")${delim}"
-			fi
-			last="${sorted[i]}"
-		done
+		_data_gen_expr
 		expr="/^${expr}.*/d"
 	else # compat
 		local search="$2"
