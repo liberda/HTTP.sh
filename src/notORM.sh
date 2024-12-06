@@ -32,6 +32,39 @@ repeat() {
 	[[ "$1" -gt 0 ]] && printf -- "$2%.0s" $(seq 1 $1)
 }
 
+shopt -s expand_aliases
+# internal. parses the `{ }` syntax, starting with 2nd arg.
+# alias, not a function, because we want to modify the argv of the parent
+# _data_parse_pairs(_, { search, column }, [{ search2, column2 }], ...) -> ${search[@]}, ${column[@]}
+alias _data_parse_pairs='
+	local search=()
+	local column=()
+
+	while shift; do # "shebang reference?" ~ mei
+		[[ "$1" != "{" ]] && break # yes, we need to match this twice
+		if [[ "$2" != "}" ]]; then
+			search+=("$2")
+		else # empty search - just match ANY record
+			search+=("")
+			column+=(0)
+			shift 2
+			break
+		fi
+		if [[ "$3" != "}" ]]; then
+			column+=("$3")
+			[[ "$4" != "}" ]] && return 1 # we accept only values in pairs
+			shift 3
+		else
+			column+=(0)
+			shift 2
+			if [[ "$2" != "{" ]]; then
+				shift
+				break
+			fi
+		fi
+	done
+'
+
 # adds a flat `array` to the `store`.
 # a store can be any file, as long as we have r/w access to it and the
 # adjacent directory.
@@ -64,21 +97,20 @@ data_add() {
 #
 # also can be used as `data_get store { } meow` to match all records 
 #
-# data_get(store, {search, [column]}, [res]) -> $res / ${!4}
+# data_get(store, {search, [column]} [{search, [column]}], ... [res]]) -> $res / ${!-1}
+# data_get(store, search, [column], [res]) -> $res / ${!4}
 data_get() {
 	[[ ! "$2" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
 	local IFS=$'\n'
-
 	local store="$1"
-	local search=()
-	local column=()
+
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
 		local -n ref="${1:-res}"
 	else # compat
-		search+=("$2")
-		column+=("${3:-0}")
+		local search=("$2")
+		local column=("${3:-0}")
 		local -n ref=${4:-res}
 	fi
 
@@ -93,7 +125,7 @@ data_get() {
 		ref=($x)
 		local i
 		for (( i=0; i<${#search[@]}; i++ )); do
-			if [[ "${ref[column[i]]}" != "${search[i]}" ]]; then
+			if [[ "${ref[column[i]]}" != "${search[i]}" && "${search[i]}" ]]; then
 				continue 2
 			fi
 		done
@@ -111,13 +143,23 @@ data_get() {
 # if there were no matches, returns 2
 # if the store wasn't found, returns 4
 #
+# data_iter(store, {search, [column]}, ... callback) -> $data
 # data_iter(store, search, callback, [column]) -> $data
 data_iter() {
 	[[ ! "$3" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
-	local column=${4:-0}
+	local store="$1"
 	local IFS=$'\n'
-	local r=1
+	local r=2
+
+	if [[ "$2" == '{' ]]; then
+		_data_parse_pairs
+		local callback="$2"
+	else # compat
+		local callback="$3"
+		local search=("$2")
+		local column=("${4:-0}")
+	fi
 
 	while read line; do
 		IFS=$delim
@@ -126,10 +168,16 @@ data_iter() {
 		local x="${line//$newline/$'\n'}"
 		data=($x)
 		IFS=
-		[[ "${data[$column]}" == "$2" || ! "$2" ]] && "$3"
+		local i
+		for (( i=0; i<${#search[@]}; i++ )); do
+			if [[ "${data[column[i]]}" != "${search[i]}" && "${search[i]}" ]]; then
+				continue 2
+			fi
+		done
+		"$callback" # only reached if an entry matched all constraints
 		[[ $? == 255 ]] && return 255
 		r=0
-	done < "$1"
+	done < "$store"
 
 	return $r
 }
@@ -220,31 +268,4 @@ _trim_control() {
 	tr="${tr//$'\n'/$newline}" # \n -> 0x02
 }
 
-# internal. parses the `{ }` syntax, starting with 2nd arg.
-# alias, not a function, because we want to modify the argv of the parent
-# _data_parse_pairs(_, { search, column }, [{ search2, column2 }], ...) -> ${search[@]}, ${column[@]}
-alias _data_parse_pairs='
-	while shift; do # "shebang reference?" ~ mei
-		[[ "$1" != "{"" ]] && break # yes, we need to match this twice
-		if [[ "$2" != "}" ]]; then
-			search+=("$2")
-		else # empty search - just match ANY record
-			search+=("")
-			column+=(0)
-			shift 2
-			break
-		fi
-		if [[ "$3" != "}" ]]; then
-			column+=("$3")
-			[[ "$4" != "}" ]] && return 1 # we accept only values in pairs
-			shift 3
-		else
-			column+=(0)
-			shift 2
-			if [[ "$2" != "{" ]]; then
-				shift
-				break
-			fi
-		fi
-	done
-'
+shopt -u expand_aliases # back to the default
