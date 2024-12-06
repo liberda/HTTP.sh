@@ -154,7 +154,7 @@ data_iter() {
 
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
-		local callback="$2"
+		local callback="$1"
 	else # compat
 		local callback="$3"
 		local search=("$2")
@@ -239,16 +239,40 @@ data_replace() {
 data_yeet() {
 	[[ ! "$2" ]] && return 1
 	[[ ! -f "$1" ]] && return 4
-	local column=${3:-0}
-	local IFS=' '
+	local store="$1"
 
-	if [[ $column == 0 ]]; then
-		local expr="/^$(_sed_sanitize "$2")${delim}.*/d"
-	else
-		local expr="/^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) ".*$delim")"'$'"/d"
+	if [[ "$2" == '{' ]]; then
+		_data_parse_pairs
+
+		# we need the pairs sorted due to how the sed expr generation works
+		local IFS=$'\01\n'
+		sorted=($(for (( i=0; i<${#search[@]}; i++ )); do
+			echo "${column[i]}"$'\01'"${search[i]}"
+		done | sort -n -t$'\01'))
+
+		local expr
+		local last=0
+		for (( i=0; i<${#sorted[@]}; i=i+2 )); do
+			if [[ $((sorted[i] - last)) -le 1 ]]; then
+				expr+="$(_sed_sanitize "${sorted[i+1]}")${delim}"
+			else
+				expr+="$(repeat $((sorted[i] - last - 1)) ".*$delim")$(_sed_sanitize "${sorted[i+1]}")${delim}"
+			fi
+			last="${sorted[i]}"
+		done
+		expr="/^${expr}.*/d"
+	else # compat
+		local search="$2"
+		local column="${3:-0}"
+		local IFS=' '
+		if [[ $column == 0 ]]; then
+			local expr="/^$(_sed_sanitize "$2")${delim}.*/d"
+		else
+			local expr="/^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) ".*$delim")"'$'"/d"
+		fi
 	fi
 
-	sed -E -i "$expr" "$1"
+	sed -E -i "$expr" "$store"
 }
 
 _sed_sanitize() {
