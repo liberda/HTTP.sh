@@ -74,29 +74,7 @@ data_get() {
 	local search=()
 	local column=()
 	if [[ "$2" == '{' ]]; then
-		while shift; do # "shebang reference?" ~ mei
-			[[ "$1" != '{' ]] && break # yes, we need to match this twice
-			if [[ "$2" != '}' ]]; then
-				search+=("$2")
-			else # empty search - just match ANY record
-				search+=('')
-				column+=(0)
-				shift 2
-				break
-			fi
-			if [[ "$3" != '}' ]]; then
-				column+=("$3")
-				[[ "$4" != '}' ]] && return 1 # we accept only values in pairs
-				shift 3
-			else
-				column+=(0)
-				shift 2
-				if [[ "$2" != '{' ]]; then
-					shift
-					break
-				fi
-			fi
-		done
+		_data_parse_pairs
 		local -n ref="${1:-res}"
 	else # compat
 		search+=("$2")
@@ -241,3 +219,32 @@ _trim_control() {
 	tr="${tr//$ctrl}"          # remove 0x03
 	tr="${tr//$'\n'/$newline}" # \n -> 0x02
 }
+
+# internal. parses the `{ }` syntax, starting with 2nd arg.
+# alias, not a function, because we want to modify the argv of the parent
+# _data_parse_pairs(_, { search, column }, [{ search2, column2 }], ...) -> ${search[@]}, ${column[@]}
+alias _data_parse_pairs='
+	while shift; do # "shebang reference?" ~ mei
+		[[ "$1" != "{"" ]] && break # yes, we need to match this twice
+		if [[ "$2" != "}" ]]; then
+			search+=("$2")
+		else # empty search - just match ANY record
+			search+=("")
+			column+=(0)
+			shift 2
+			break
+		fi
+		if [[ "$3" != "}" ]]; then
+			column+=("$3")
+			[[ "$4" != "}" ]] && return 1 # we accept only values in pairs
+			shift 3
+		else
+			column+=(0)
+			shift 2
+			if [[ "$2" != "{" ]]; then
+				shift
+				break
+			fi
+		fi
+	done
+'
