@@ -76,7 +76,7 @@ _data_gen_expr() {
 
 	local last=0
 	for (( i=0; i<${#sorted[@]}; i=i+2 )); do
-		if [[ $((sorted[i] - last)) -lt 1 ]]; then
+		if [[ $((sorted[i] - last)) -le 1 ]]; then
 			expr+="$(_sed_sanitize "${sorted[i+1]}")${delim}"
 		else
 			expr+="$(repeat $((sorted[i] - last)) ".*$delim")$(_sed_sanitize "${sorted[i+1]}")${delim}"
@@ -235,16 +235,16 @@ data_replace() {
 	local store="$1"
 	local output=
 	local tr
-
-	if [[ "$2" == '{' ]]; then
-		_data_parse_pairs
-
-		local -n ref="$1"
-
-		local expr
-		_data_gen_expr
-		expr="s$ctrl^${expr}.*$ctrl"
-	else
+## currently broken
+# 	if [[ "$2" == '{' ]]; then
+# 		_data_parse_pairs
+# 
+# 		local -n ref="$1"
+# 
+# 		local expr
+# 		_data_gen_expr
+# 		expr="s$ctrl^${expr}.*$ctrl"
+# 	else
 		local column=${4:-0}
 		local -n ref="$3"
 		local IFS=' '
@@ -255,7 +255,7 @@ data_replace() {
 			local expr="s$ctrl^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) ".*$delim")"'$'"$ctrl"
 		fi
 
-	fi
+	# fi
 	
 	for i in "${ref[@]}"; do
 		_trim_control "$i"
