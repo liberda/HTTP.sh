@@ -3,6 +3,9 @@ Node.js, but `| sed 's/Node/HTTP/;s/js/sh/'`.
 
 HTTP.sh is (by far) the most extensible attempt at creating a web framework in Bash, and (AFAIK) the only one that's actively maintained. Although I strive for code quality, this is still rather experimental and may contain bugs.
 
+- (WiP) [Documentation](docs/)
+- [List of security fixes](docs/sec-fixes/)
+
 Originally made for Junction Stupidhack 2020; Created by [sdomi](https://sakamoto.pl/), [ptrcnull](https://ptrcnull.me/) and [selfisekai](https://selfisekai.rocks/).
 
 ## Quick Start
