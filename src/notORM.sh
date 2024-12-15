@@ -220,7 +220,7 @@ data_replace_value() {
 		local expr="s$ctrl^($(repeat $column ".*$delim"))$(_sed_sanitize "$2")($delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) ".*$delim"))"'$'"$ctrl\1$(_sed_sanitize "$3")\2$ctrl"
 	fi
 
-	sed -E -i "$expr" "$1"
+	sed -i "$expr" "$1"
 }
 
 # replace an entire entry in `store` with `array`, filtering by `search`.
@@ -266,7 +266,7 @@ data_replace() {
 
 	echo "$expr"
 
-	sed -E -i "$expr" "$store"
+	sed -i "$expr" "$store"
 }
 
 # deletes entries from the `store` using `search`.
@@ -296,16 +296,16 @@ data_yeet() {
 		fi
 	fi
 
-	sed -E -i "$expr" "$store"
+	sed -i "$expr" "$store"
 }
 
 _sed_sanitize() {
 	_trim_control "$1"
-	echo -n "$tr" | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'
+	echo -n "$tr" | xxd -p | tr -d '\n' | sed 's/../\\x&/g'
 }
 
 _sed_sanitize_array() {
-	echo -n "$1" | xxd -p | tr -d '\n' | sed -E 's/../\\x&/g'
+	echo -n "$1" | xxd -p | tr -d '\n' | sed 's/../\\x&/g'
 }
 
 # _trim_control(string) -> $tr
