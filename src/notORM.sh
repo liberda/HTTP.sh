@@ -264,8 +264,6 @@ data_replace() {
 
 	expr+="$(_sed_sanitize_array "$output")$ctrl"
 
-	echo "$expr"
-
 	sed -i "$expr" "$store"
 }
 
