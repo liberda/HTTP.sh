@@ -218,7 +218,7 @@ data_replace_value() {
 	if [[ $column == 0 ]]; then
 		local expr="s$ctrl^$(_sed_sanitize "$2")\(${delim}.*\)$ctrl$(_sed_sanitize "$3")\1$ctrl"
 	else
-		local expr="s$ctrl^\($(repeat $column ".*$delim")\)$(_sed_sanitize "$2")\($delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) ".*$delim")\)"'$'"$ctrl\1$(_sed_sanitize "$3")\2$ctrl"
+		local expr="s$ctrl^\($(repeat $column ".*$delim")\)$(_sed_sanitize "$2")\($delim$(repeat $(( $(cat "${1}.cols") - column )) ".*$delim")\)"'$'"$ctrl\1$(_sed_sanitize "$3")\2$ctrl"
 	fi
 
 	sed -i "$expr" "$1"
@@ -253,7 +253,7 @@ data_replace() {
 		if [[ $column == 0 ]]; then
 			local expr="s$ctrl^$(_sed_sanitize "$2")${delim}.*$ctrl"
 		else
-			local expr="s$ctrl^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) ".*$delim")"'$'"$ctrl"
+			local expr="s$ctrl^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column )) ".*$delim")"'$'"$ctrl"
 		fi
 
 	# fi
@@ -264,7 +264,6 @@ data_replace() {
 	done
 
 	expr+="$(_sed_sanitize_array "$output")$ctrl"
-
 	sed -i "$expr" "$store"
 }
 
@@ -291,7 +290,7 @@ data_yeet() {
 		if [[ $column == 0 ]]; then
 			local expr="/^$(_sed_sanitize "$2")${delim}.*/d"
 		else
-			local expr="/^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) ".*$delim")"'$'"/d"
+			local expr="/^$(repeat $column ".*$delim")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column )) ".*$delim")"'$'"/d"
 		fi
 	fi
 
