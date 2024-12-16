@@ -213,11 +213,12 @@ data_replace_value() {
 	[[ ! -f "$1" ]] && return 4
 	local column=${4:-0}
 	local IFS=' '
-	
+
+	# NOTE: sed in normal (not extended -E mode) requires `\(asdf\)` to make a match!
 	if [[ $column == 0 ]]; then
-		local expr="s$ctrl^$(_sed_sanitize "$2")(${delim}.*)$ctrl$(_sed_sanitize "$3")\1$ctrl"
+		local expr="s$ctrl^$(_sed_sanitize "$2")\(${delim}.*\)$ctrl$(_sed_sanitize "$3")\1$ctrl"
 	else
-		local expr="s$ctrl^($(repeat $column ".*$delim"))$(_sed_sanitize "$2")($delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) ".*$delim"))"'$'"$ctrl\1$(_sed_sanitize "$3")\2$ctrl"
+		local expr="s$ctrl^\($(repeat $column ".*$delim")\)$(_sed_sanitize "$2")\($delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) ".*$delim")\)"'$'"$ctrl\1$(_sed_sanitize "$3")\2$ctrl"
 	fi
 
 	sed -i "$expr" "$1"
