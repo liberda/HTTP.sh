@@ -28,5 +28,7 @@ function mailsend() {
 		--upload-file "$tmp" \
 		--user "${cfg[mail]}:${cfg[mail_password]}"
 
+	res=$?
 	rm "$tmp"
+	return $res
 }
