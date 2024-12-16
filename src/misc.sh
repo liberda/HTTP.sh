@@ -58,7 +58,7 @@ function url_decode() {
 
 	local t=$'\01'
 	local a="${1//$t}" # strip all of our control chrs for safety
-	a="${1//+/ }" # handle whitespace
+	a="${a//+/ }" # handle whitespace
 	a="${a//%[A-Fa-f0-9][A-Fa-f0-9]/$t&}" # match '%xx', prepend with token
 	echo -ne "${a//$t%/\\x}" # replace the above with '\\x' and evaluate
 }
