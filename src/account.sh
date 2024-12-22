@@ -150,13 +150,12 @@ function delete_account() {
   data_yeet secret/users.dat "$1"
 }
 
-# user_reset_password(username, token, new_password)
+# user_reset_password(username, token, new_password) -> $?, ${user[@]}
 user_reset_password() {
 	[[ ! "$1" ]] && return 1 # sensitive function, so we're checking all three
 	[[ ! "$2" ]] && return 1 # there's probably a better way,
 	[[ ! "$3" ]] && return 1 # but i don't care.
 
-	local user
 	if data_get secret/users.dat "$1" 0 user; then
 
 		if [[ "$2" == "${user[3]}" ]]; then
