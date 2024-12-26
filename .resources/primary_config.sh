@@ -39,3 +39,7 @@ cfg[mail_ignore_bad_cert]=false
 cfg[hash]="argon2id"
 
 cfg[cookie_path]="/"
+
+# should registering automatically login the user?
+# useful for flows involving a confirmation e-mail
+cfg[register_should_login]=true

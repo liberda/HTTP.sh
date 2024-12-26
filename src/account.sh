@@ -28,7 +28,7 @@ function register() {
 	local out=("$username" "$hash" "$salt" "" "${extra[@]}")
 	data_add secret/users.dat out
 
-	_new_session "$username"
+	[[ "${cfg[register_should_login]}" == true ]] && _new_session "$username"
 
 	set_cookie_permanent "sh_session" "${session[2]}"
 	set_cookie_permanent "username" "$username"
