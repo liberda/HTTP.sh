@@ -42,7 +42,7 @@ alias _data_parse_pairs='
 
 	while shift; do # "shebang reference?" ~ mei
 		[[ "$1" != "{" ]] && break # yes, we need to match this twice
-		if [[ "$2" != "}" ]]; then
+		if [[ "$2" != "}" || "$3" == "}" || "$4" == "}" ]]; then # make sure we dont want to match the bracket
 			search+=("$2")
 		else # empty search - just match ANY record
 			search+=("")
