@@ -103,6 +103,7 @@ if [[ -n "${headers["content-type"]}" ]]; then
 		    r[content_boundary]="${boundary##*boundary=}"
 	    fi
 	fi
+	unset IFS
 fi
 
 if [[ -n "${headers["host"]}" ]]; then
