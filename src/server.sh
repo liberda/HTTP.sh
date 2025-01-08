@@ -85,6 +85,7 @@ r[websocket_key]="${headers["sec-websocket-key"]}"
 r[req_headers]="$headers"
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
 r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}/$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
+r[url_clean]="${r[url]%\?*}"
 [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}") # dead code
 
 if [[ -n "${headers["content-type"]}" ]]; then
@@ -167,14 +168,13 @@ echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${ge
 [[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
 if [[ ${r[status]} != 101 ]]; then
-	clean_url="${r[url]%\?*}"
 	for (( i=0; i<${#route[@]}; i=i+3 )); do
-		if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "$clean_url")" != "" ]] || [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "$clean_url/")" != "" ]]; then
+		if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url_clean]}")" != "" ]] || [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url_clean]}/")" != "" ]]; then
 			r[status]=212
 			r[view]="${route[$((i+2))]}"
 			IFS='/'
 			url=(${route[$i]})
-			url_=($clean_url)
+			url_=(${r[url_clean]})
 			unset IFS
 			for (( j=0; j<${#url[@]}; j++ )); do
 				# TODO: think about the significance of this if really hard when i'm less tired
