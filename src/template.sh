@@ -136,14 +136,12 @@ function nested_declare() {
 # nested_add(ref, array)
 function nested_add() {
 	local nested_id=$(_nested_random)
-	declare -n nested_ref="$2"
 	declare -g -A _$nested_id
-	
-	# poor man's array copy
-	IFS=' '
-	for k in ${!nested_ref[@]}; do
-		declare -g -A _$nested_id["$k"]="${nested_ref["$k"]}"
-	done
+
+	local a
+	a="$(declare -p "$2")"
+	# pain
+	eval "${a/ $2=/ -g _$nested_id=}"
 	
 	local -n ref=$1
 	ref+=("$nested_id")
