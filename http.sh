@@ -122,7 +122,9 @@ fi
 source src/worker.sh
 
 if [[ -f "${cfg[namespace]}/config.sh" ]]; then
+	run_once=true
 	source "${cfg[namespace]}/config.sh"
+	unset run_once
 fi
 
 if [[ ${cfg[socat_only]} == true ]]; then
