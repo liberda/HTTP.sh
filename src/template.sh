@@ -77,12 +77,16 @@ function render() {
 				echo 's'$'\02''\{\{\#'"$key"'\}\}'$'\02''I cowardly refuse to endlessly recurse\!'$'\02''g;' >> "$subtemplate"
 			elif [[ -f "$key" ]]; then
 				echo 's'$'\02''\{\{\#'"$key"'\}\}'$'\02'"$(tr -d $'\01'$'\02' < "$key" | tr $'\n' $'\01' | sed 's/\&/�UwU�/g')"$'\02''g;' >> "$subtemplate"
+				_template_find_special_uri "$(cat "$key")"
 			fi
 		done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
 
 		cat <<< $(cat "$subtemplate" "$tmp") > "$tmp"
 		rm "$subtemplate"
 	fi
+
+	_template_find_special_uri "$template"
+	_template_gen_special_uri >> "$tmp"
 
 	if [[ "$3" != true ]]; then # are we recursing?
 		cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
@@ -95,6 +99,38 @@ function render() {
 		tr '\n' $'\01' <<< "$template" | sed -E -f "$tmp" | tr $'\01' '\n'
 		rm "$tmp"
 	fi
+}
+
+_template_uri_list=()
+# internal function that finds all occurences of the special `{{-uri-N}}` tag.
+# here to also make it run on subtemplates
+#
+# _template_find_special_uri(tpl_string)
+_template_find_special_uri() {
+	local IFS=$'\n'
+	local line
+	if [[ "$1" == *'{{-uri'* ]]; then
+		while read line; do
+			_template_uri_list+=("${line//[^0-9]}")
+		done <<< "$(grep -Poh '{{-uri-[0-9]*}}' <<< "$1")"
+	fi
+}
+
+# internal function that takes the output from _template_find_special_uri and
+# transforms it into sed exprs
+#
+# _template_gen_special_uri() -> stdout
+_template_gen_special_uri() {
+	local IFS=$'\n'
+	local num
+	local uri
+	# {{-uri-<num>}}, where num is amount of slashed parts to include
+	sort <<< ${_template_uri_list[*]} | uniq | while read num; do
+		uri="$(grep -Poh '^(/.*?){'"$((num+1))"'}' <<< "${r[url_clean]}/")"
+		echo 's'$'\02''\{\{-uri-'"$num"'\}\}'$'\02'"$uri"$'\02''g;'
+	done
+	# for replacing plain {{-uri}} without a number
+	echo 's'$'\02''\{\{-uri\}\}'$'\02'"${r[url_clean]}"$'\02''g;'
 }
 
 # render_unsafe(array, template_file)
