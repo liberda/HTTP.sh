@@ -70,6 +70,7 @@ alias _data_parse_pairs='
 _data_gen_expr() {
 	# we need the pairs sorted due to how the sed expr generation works
 	local IFS=$'\01\n'
+	local i
 	sorted=($(for (( i=0; i<${#search[@]}; i++ )); do
 		echo "${column[i]}"$'\01'"${search[i]}"
 	done | sort -n -t$'\01'))
@@ -100,6 +101,7 @@ data_add() {
 	local res=
 	local IFS=$'\n'
 
+	local i
 	for i in "${ref[@]}"; do
 		_trim_control "$i"
 		res+="$tr$delim"
@@ -257,7 +259,7 @@ data_replace() {
 		fi
 
 	# fi
-	
+	local i
 	for i in "${ref[@]}"; do
 		_trim_control "$i"
 		output+="$tr$delim"
