@@ -90,16 +90,34 @@ _data_gen_expr() {
 # a store can be any file, as long as we have r/w access to it and the
 # adjacent directory.
 #
+# 3rd argument is optional, and will specify whether to insert an auto-increment
+# ID column. False by default; Setting to true will cause an internal data_iter
+# call. The inserted ID column is always the zeroeth one.
+#
 # this function will create some helper files if they don't exist. those
 # shouldn't be removed, as other functions may use them for data mangling.
 #
-# data_add(store, array)
+# data_add(store, array, [numbered])
 data_add() {
 	[[ ! -v "$2" ]] && return 1
 	local -n ref="$2"
-	[[ ! -f "$1" ]] && echo "${#ref[@]}" > "${1}.cols"
 	local res=
 	local IFS=$'\n'
+
+	if [[ ! -f "$1" ]]; then
+		if [[ "$3" == true ]]; then
+			res+="0$delim"
+			echo "$((${#ref[@]}+1))" > "${1}.cols"
+		else
+			echo "${#ref[@]}" > "${1}.cols"
+		fi
+	elif [[ "$3" == true ]]; then
+		local data
+		data_iter "$1" { } : # get last element
+		local id=$(( ${data[0]}+1 )) # returns 1 on non-int values
+		
+		res+="$id$delim"
+	fi
 
 	local i
 	for i in "${ref[@]}"; do
