@@ -155,7 +155,7 @@ data_get() {
 	fi
 
 	local line
-	while read line; do
+	while read -r line; do
 		IFS=$delim
 		
 		# LOAD-BEARING!!
@@ -201,7 +201,7 @@ data_iter() {
 		local column=("${4:-0}")
 	fi
 
-	while read line; do
+	while read -r line; do
 		IFS=$delim
 		
 		# LOAD BEARING; see data_get
