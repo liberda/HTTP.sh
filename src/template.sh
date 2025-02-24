@@ -7,7 +7,7 @@ function render() {
 	if [[ "$3" != true ]]; then
 		local template="$(tr -d $'\01'$'\02' < "$2" | sed 's/\&/�UwU�/g')"
 	else
-		local template="$(cat "$2" | sed -E 's/\\/\\\\/g')"
+		local template="$(tr -d '$\02' < "$2" | sed -E 's/\\/\\\\/g')"
 	fi
 	local -n ref=$1
 	local tmp=$(mktemp)
@@ -29,12 +29,12 @@ function render() {
 
 				value+="$(render fdsa "$subtemplate" true)"
 			done
-			value="$(sed -E 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02'';s'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02' <<< "$value")"
+			value="$(tr -d '$\02' <<< "$value" | sed -E 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02'';s'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02')"
 
 			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
 			rm "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
-			local value="$(sed -E 's/\&/�UwU�/g' <<< "${ref["$key"]}")"
+			local value="$(tr -d $'\01\02' <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
 			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
@@ -53,7 +53,7 @@ function render() {
 		elif [[ "${ref["$key"]}" != "" ]]; then
 			echo "VALUE: ${ref["$key"]}" > /dev/stderr
 			if [[ "$3" != true ]]; then
-				local value="$(html_encode <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
+				local value="$(html_encode <<< "${ref["$key"]}" | tr -d $'\02' | sed -E 's/\&/�UwU�/g')"
 			else
 				local value="$(echo -n "${ref["$key"]}" | tr -d $'\01'$'\02' | tr $'\n' $'\01' | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
