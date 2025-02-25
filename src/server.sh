@@ -271,7 +271,7 @@ elif [[ ${r[status]} == 401 ]]; then
 	source "src/response/401.sh"
 elif [[ ${r[status]} == 404 ]]; then
 	source "src/response/404.sh"
-elif [[ ${r[status]} == 101 ]]; then
+elif [[ ${r[status]} == 101 && ${cfg[websocket_enable]} == true ]]; then
 	source "src/response/101.sh"
 else
 	source "src/response/403.sh"

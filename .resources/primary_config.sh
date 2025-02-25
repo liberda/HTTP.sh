@@ -43,3 +43,5 @@ cfg[cookie_path]="/"
 # should registering automatically login the user?
 # useful for flows involving a confirmation e-mail
 cfg[register_should_login]=true
+
+cfg[websocket_enable]=false
