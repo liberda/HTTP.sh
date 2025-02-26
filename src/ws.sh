@@ -1,69 +1,70 @@
-#!/bin/zsh
-read bytes
+#!/bin/bash
 
-echo "bytes:" > /dev/stderr
-echo $bytes | hexdump -C > /dev/stderr
+# _ws_to_varlen(num) -> $num
+_ws_to_varlen() {
+	if [[ $1 -lt 126 ]]; then
+		num=$(u8 "$1")
+	elif [[ $1 -ge 126 ]]; then # 2 bytes extended
+		num=7e$(u16 "$1")
+	elif [[ $1 -gt 65535 ]]; then # 8 bytes extended
+		num=7f$(u64 "$1")
+	fi
+}
 
-readarray -t data <<< $(echo -n $bytes | hexdump -e '/1 "%u\n"')
+# _ws_from_varlen(len) -> $len
+_ws_from_varlen() {
+	if [[ $1 -lt 126 ]]; then
+		len="$1"
+		return
+	elif [[ $1 == 126 ]]; then
+		bread 2
+	elif [[ $1 == 127 ]]; then
+		bread 8
+	else # what
+		return 1
+	fi
+	len="$((0x$bres))"
+}
 
-echo "data:" > /dev/stderr
-echo ${data[@]} | hexdump -C > /dev/stderr
+# ws_send(payload)
+ws_send() {
+	local num out len
+	len="${#1}"
+	[[ $len == 0 ]] && return
+	_ws_to_varlen $len
 
+	( echo -n "81$num" | xxd -p -r; echo -n "$1" )
+}
 
-echo "FIN bit:" $(( ${data[0]} >> 7 )) > /dev/stderr
+ws_recv() {
+	local flags fin opcode mask mask_ len bres
+	if [[ "$1" ]]; then
+		local -n ws_res=$1
+	fi
+	bread 2 || return 1
+	flags=$bres
 
-echo "opcode:" $(( ${data[0]} & 0x0f )) > /dev/stderr
+	fin=$(bit_slice $flags 15..16)
+	opcode=$(bit_slice $flags 8..12)
+	mask_=$(bit_slice $flags 7)
+	len=$(bit_slice $flags 0..7)
+	_ws_from_varlen "$len" # check for extended length
 
-echo ${data[0]} > /dev/stderr
+	if [[ $mask_ == 1 ]]; then
+		bread 4
+		# split into 4 separate bytes, separate them with dummy items at odd positions
+		# this is saving us a div/mul in the for loop below! :3
+		mask=( ${bres:0:2} . ${bres:2:2} . ${bres:4:2} . ${bres:6:2} )
+	fi
 
-mask_bit=$(( ${data[1]} >> 7 ))
-echo "Mask (bit):" $mask_bit > /dev/stderr
-
-len=$(( ${data[1]} & 0x7f ))
-offset=2 # 2 for header
-
-if [[ $len == 126 ]]; then
-	len=$(( ${data[2]} << 8 + ${data[3]} ))
-	offset=4 # 2 for header, 2 for extended length
-elif [[ $len == 127 ]]; then
-	len=0
-	for i in {0..8}; do
-		len=$(( $len << 8 + ${data[2+i]} ))
-	done
-	offset=10 # 2 for header, 8 for extended length
-fi
-
-echo "Data length:" $len > /dev/stderr
-
-echo "Offset:" $offset > /dev/stderr
-
-if [[ $mask_bit == 1 ]]; then
-	read -ra mask <<< ${data[@]:$offset:4}
-
-	echo "Mask:" $mask > /dev/stderr
-
-	offset=$(( $offset + 4 ))
-fi
-
-read -ra payload <<< ${data[@]:$offset:$len}
-
-echo "Payload:" ${payload[@]} > /dev/stderr
-
-if [[ $mask_bit == 1 ]]; then
-	for ((i = 0; i < $len; i++)); do
-		byte=$(( ${payload[$i]}  ^ ${mask[$i % 4]} ))
-		echo "Byte $i: $byte" > /dev/stderr
-		payload[$i]=$byte
-	done
-
-	echo "Payload unmasked:" ${payload[@]} > /dev/stderr
-fi
-
-payload_hex=""
-for ((i = 0; i < $len; i++)); do
-	hex=$(printf '\\x%x\n' $(( ${payload[$i]} )))
-	payload_hex+=$hex
-done
-
-echo "Payload hex:" $payload_hex > /dev/stderr
-echo -e "Payload: $payload_hex" > /dev/stderr
+	bread $len
+	if [[ $mask_ == 1 ]]; then
+		val=()
+		for (( i=0; i<(len*2); i=i+2 )); do
+			val+=($(( 0x${bres:i:2} ^ 0x${mask[i%8]} )))
+		done
+		ws_res="$(printf '%x' ${val[@]} | unhex)" # TODO: variant that doesn't unhex
+	else
+		ws_res="$(unhex <<< "$bres")"
+	fi
+}

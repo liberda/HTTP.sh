@@ -21,6 +21,7 @@ cfg[ssl_cert]=''
 cfg[ssl_key]=''
 
 cfg[extension]='shs'
+cfg[extension_websocket]='shx'
 #cfg[encoding]='UTF-8' # UTF-8 by default, used by iconv
 cfg[extra_headers]="server: HTTP.sh/$HTTPSH_VERSION (devel)"
 

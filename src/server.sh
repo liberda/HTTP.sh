@@ -167,42 +167,44 @@ echo "$(date) - IP: ${r[ip]}, PROTO: ${r[proto]}, URL: ${r[url]}, GET_data: ${ge
 
 [[ -f "${cfg[namespace]}/routes.sh" ]] && source "${cfg[namespace]}/routes.sh"
 
-if [[ ${r[status]} != 101 ]]; then
-	for (( i=0; i<${#route[@]}; i=i+3 )); do
-		if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url_clean]}")" != "" ]] || [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url_clean]}/")" != "" ]]; then
-			r[status]=212
-			r[view]="${route[$((i+2))]}"
-			IFS='/'
-			url=(${route[$i]})
-			url_=(${r[url_clean]})
-			unset IFS
-			for (( j=0; j<${#url[@]}; j++ )); do
-				# TODO: think about the significance of this if really hard when i'm less tired
-				if [[ ${url_[$j]} != '' && ${url[$j]} == ":"* ]]; then
-					params[${url[$j]/:/}]="${url_[$j]}"
-				fi
-			done
-			break
-		fi
-	done
-	unset IFS
-	if [[ ${r[status]} != 212 ]]; then
-		if [[ -a "${r[uri]}" && ! -r "${r[uri]}" ]]; then
-			r[status]=403
-		elif [[ "${r[uri]}" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
-			r[status]=403
-		elif [[ -f "${r[uri]}" ]]; then
-			r[status]=200
-		elif [[ -d "${r[uri]}" ]]; then
-			for name in ${cfg[index]}; do
-				if [[ -f "${r[uri]}/$name" ]]; then
-					r[uri]="${r[uri]}/$name"
-					r[status]=200
-				fi
-			done
+for (( i=0; i<${#route[@]}; i=i+3 )); do
+	if [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url_clean]}")" != "" ]] || [[ "$(grep -Poh "^${route[$((i+1))]}$" <<< "${r[url_clean]}/")" != "" ]]; then
+		if [[ "${r[status]}" == 101 ]]; then
+			r[status]=102 # internal, temp
 		else
-			r[status]=404
+			r[status]=212
 		fi
+		r[view]="${route[$((i+2))]}"
+		IFS='/'
+		url=(${route[$i]})
+		url_=(${r[url_clean]})
+		unset IFS
+		for (( j=0; j<${#url[@]}; j++ )); do
+			# TODO: think about the significance of this if really hard when i'm less tired
+			if [[ ${url_[$j]} != '' && ${url[$j]} == ":"* ]]; then
+				params[${url[$j]/:/}]="${url_[$j]}"
+			fi
+		done
+		break
+	fi
+done
+unset IFS
+if [[ ${r[status]} != 212 && ${r[status]} != 102 ]]; then
+	if [[ -a "${r[uri]}" && ! -r "${r[uri]}" ]]; then
+		r[status]=403
+	elif [[ "${r[uri]}" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
+		r[status]=403
+	elif [[ -f "${r[uri]}" ]]; then
+		[[ "${r[status]}" != 101 ]] && r[status]=200
+	elif [[ -d "${r[uri]}" ]]; then
+		for name in ${cfg[index]}; do
+			if [[ -f "${r[uri]}/$name" ]]; then
+				r[uri]="${r[uri]}/$name"
+				r[status]=200
+			fi
+		done
+	else
+		r[status]=404
 	fi
 fi
 
@@ -266,12 +268,20 @@ fi
 if [[ ${r[status]} == 210 && ${cfg[autoindex]} == true ]]; then
 	source "src/response/listing.sh"
 elif [[ ${r[status]} == 200 || ${r[status]} == 212 ]]; then
-	source "src/response/200.sh"
+	# ban the WS executable extensions
+	# default defined here for legacy compat only
+	if [[ "${r[view]}" == *".${cfg[extension_websocket]-shx}" ||
+		  "${r[url_clean]}" == *".${cfg[extension_websocket]-shx}" ]]; then
+		source "src/response/403.sh" # TODO: should be 400/500, ig
+	else
+		source "src/response/200.sh"
+	fi
 elif [[ ${r[status]} == 401 ]]; then
 	source "src/response/401.sh"
 elif [[ ${r[status]} == 404 ]]; then
 	source "src/response/404.sh"
-elif [[ ${r[status]} == 101 && ${cfg[websocket_enable]} == true ]]; then
+elif [[ ${r[status]} == 101 || ${r[status]} == 102 ]] &&
+     [[ ${cfg[websocket_enable]} == true ]]; then
 	source "src/response/101.sh"
 else
 	source "src/response/403.sh"
