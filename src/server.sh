@@ -118,7 +118,7 @@ if [[ -n "${headers["host"]}" ]]; then
 	fi
 fi
 
-if [[ "${headers["connection"]}" == "upgrade" && "${headers["upgrade"]}" == "websocket" ]]; then
+if [[ "${headers["connection"]}" == *"upgrade"* && "${headers["upgrade"]}" == "websocket" ]]; then
     r[status]=101
 fi
 
