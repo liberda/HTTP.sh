@@ -83,7 +83,7 @@ notORM_replace_oldsyntax() {
 		data_get "$store" { } out
 		out[2]='meow!'
 		data_replace "$store" 4 out 1 || return $?
-		data_get "$store" 4 || return $?
+		data_get "$store" 4 1 || return $?
 		[[ "${res[@]}" == "${out[@]}" ]] && return 0 || return 1
 	}
 }
