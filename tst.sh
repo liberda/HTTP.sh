@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+trap ctrl_c INT
+ctrl_c() {
+	pkill -P $$
+	echo -e "Interrupted and cleaned up."
+	return 255
+}
 
 _defaults() {
 	match=""
@@ -52,6 +58,7 @@ on_fatal() {
 IFS=$'\n'
 for i in "$@"; do
 	if [[ ! -f "$i" ]]; then
+		echo "ENOENT: $i"
 		echo -e "$0 - basic test framework\n\nusage: $0 <test> [test] [...]"
 		exit 1
 	fi
@@ -116,10 +123,12 @@ _final_cleanup() {
 	for i in $(jobs -p); do
 		pkill -P $i
 	done
-	sleep 2
-	for i in $(jobs -p); do
-		pkill -9 -P $i
-	done
+	if [[ "$(jobs -p)" != '' ]]; then
+		sleep 1
+		for i in $(jobs -p); do
+			pkill -9 -P $i
+		done
+	fi
 	pkill -P $$
 }
 
