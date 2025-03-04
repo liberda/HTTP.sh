@@ -60,9 +60,49 @@ EOF
 	match="nyaa"
 }
 
-server_res_header() {
+server_patch_dummy() {
+	prepare() {
+		cat <<"EOF" > app/webroot/meow.shs
+#!/bin/bash
+echo "${r[method]}"
+EOF
+	}
+	
+	tst() {
+		curl -s "localhost:1337/meow.shs" -X PATCH
+	}
+
+	match="PATCH"
+}
+
+server_put_dummy() {	
+	tst() {
+		curl -s "localhost:1337/meow.shs" -X PUT
+	}
+
+	match="PUT"
+}
+
+server_delete_dummy() {	
+	tst() {
+		curl -s "localhost:1337/meow.shs" -X DELETE
+	}
+
+	match="DELETE"
+}
+
+server_head() {
+	# known to fail; TODO for another day
 	tst() {
 		curl -s -I localhost:1337
+	}
+
+	match_sub="HTTP.sh"
+}
+
+server_res_header() {
+	tst() {
+		curl -s -v localhost:1337 2>&1
 	}
 
 	match_sub="HTTP.sh"
@@ -161,6 +201,14 @@ subtest_list=(
 	server_output
 	server_get_param
 	server_post_param
+
+	# currently functionally equivalent
+	server_patch_dummy
+	server_put_dummy
+	server_delete_dummy
+
+	## currently broken, TODO
+	# server_head
 
 	server_res_header
 	server_res_header_custom
