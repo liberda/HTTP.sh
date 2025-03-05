@@ -99,6 +99,8 @@ function render() {
 		tr '\n' $'\01' <<< "$template" | sed -E -f "$tmp" | tr $'\01' '\n'
 		rm "$tmp"
 	fi
+
+	[[ "$3" != true ]] && _template_uri_list=()
 }
 
 _template_uri_list=()
