@@ -36,6 +36,16 @@ function render() {
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
 			local value="$(tr -d $'\01\02' <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
 			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
+		elif [[ "$key" == "+"* ]]; then # date mode
+			if [[ ! "${ref["$key"]}" ]]; then
+				# special case: if the date is empty,
+				# make the output empty too
+				echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02\02''g;' >> "$tmp" #'
+			else
+				local value
+				printf -v value "%(${cfg[template_date_format]})T" "${ref["$key"]}"
+				echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
+			fi
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
 

@@ -46,3 +46,5 @@ cfg[cookie_path]="/"
 cfg[register_should_login]=true
 
 cfg[websocket_enable]=false
+
+cfg[template_date_format]='%Y-%m-%d %H:%M:%S'
