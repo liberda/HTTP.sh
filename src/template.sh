@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # template.sh - basic templating engine
+_tpl_newline=$'\01'
+_tpl_ctrl=$'\02'
 
 # nightmare fuel
 # render(array, template_file, recurse)
 function render() {
 	if [[ "$3" != true ]]; then
-		local template="$(tr -d $'\01'$'\02' < "$2" | sed 's/\&/�UwU�/g')"
+		local template="$(tr -d ${_tpl_newline}${_tpl_ctrl} < "$2" | sed 's/\&/�UwU�/g')"
 	else
-		local template="$(tr -d '$\02' < "$2" | sed -E 's/\\/\\\\/g')"
+		local template="$(tr -d ${_tpl_ctrl} < "$2" | sed -E 's/\\/\\\\/g')"
 	fi
 	local -n ref=$1
 	local tmp=$(mktemp)
@@ -17,9 +19,9 @@ function render() {
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
 			local subtemplate=$(mktemp)
-			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' $'\01' > "$subtemplate"
+			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}" > "$subtemplate"
 
-			echo 's'$'\02''\{\{start '"$key"'\}\}.*\{\{end '"$key"'\}\}'$'\02''\{\{'"$key"'\}\}'$'\02'';' >> "$tmp"
+			echo "s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};" >> "$tmp"
 
 			local -n asdf=${ref["$key"]}
 			local j
@@ -29,28 +31,28 @@ function render() {
 
 				value+="$(render fdsa "$subtemplate" true)"
 			done
-			value="$(tr -d '$\02' <<< "$value" | sed -E 's'$'\02''\{\{start '"$key"'\}\}'$'\02'$'\02'';s'$'\02''\{\{end '"$key"'\}\}'$'\02'$'\02')"
+			value="$(tr -d "${_tpl_ctrl}" <<< "$value" | sed -E "s${_tpl_ctrl}"'\{\{start '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}"'\{\{end '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}")"
 
-			echo 's'$'\02''\{\{'"$key"'\}\}'$'\02'''"$value"''$'\02'';' >> "$tmp"
+			echo "s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};" >> "$tmp"
 			rm "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
-			local value="$(tr -d $'\01\02' <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
-			echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
+			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
+			echo "s${_tpl_ctrl}"'\{\{\'"$key"'\}\}'"${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp" #'
 		elif [[ "$key" == "+"* ]]; then # date mode
 			if [[ ! "${ref["$key"]}" ]]; then
 				# special case: if the date is empty,
 				# make the output empty too
-				echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02\02''g;' >> "$tmp" #'
+				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp" #'
 			else
 				local value
 				printf -v value "%(${cfg[template_date_format]})T" "${ref["$key"]}"
-				echo 's'$'\02''\{\{\'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp" #'
+				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};" >> "$tmp" #'
 			fi
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
 
 			local subtemplate=$(mktemp)
-			echo 's'$'\02''\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'$'\02''\2\3'$'\02'';' >> "$subtemplate"
+			echo "s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};" >> "$subtemplate"
 
 			# TODO: check if this is needed?
 			# the code below makes sure to resolve the conditional blocks
@@ -63,13 +65,13 @@ function render() {
 		elif [[ "${ref["$key"]}" != "" ]]; then
 			echo "VALUE: ${ref["$key"]}" > /dev/stderr
 			if [[ "$3" != true ]]; then
-				local value="$(html_encode <<< "${ref["$key"]}" | tr -d $'\02' | sed -E 's/\&/�UwU�/g')"
+				local value="$(html_encode <<< "${ref["$key"]}" | tr -d "${_tpl_ctrl}" | sed -E 's/\&/�UwU�/g')"
 			else
-				local value="$(echo -n "${ref["$key"]}" | tr -d $'\01'$'\02' | tr $'\n' $'\01' | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
+				local value="$(echo -n "${ref["$key"]}" | tr -d "${_tpl_ctrl}${_tpl_newline}" | tr $'\n' "${_tpl_newline}" | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
-			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'''"$value"''$'\02''g;' >> "$tmp"
+			echo "s${_tpl_ctrl}"'\{\{\.'"$key"'\}\}'"${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp"
 		else
-			echo 's'$'\02''\{\{\.'"$key"'\}\}'$'\02'$'\02''g;' >> "$tmp"
+			echo "s${_tpl_ctrl}"'\{\{\.'"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp"
 		fi
 	done
 	unset IFS
@@ -84,9 +86,9 @@ function render() {
 			# this is possibly not enough to prevent all recursions, but
 			# i see it as a last-ditch measure. so it'll do here.
 			if [[ "$file" == "$2" ]]; then
-				echo 's'$'\02''\{\{\#'"$key"'\}\}'$'\02''I cowardly refuse to endlessly recurse\!'$'\02''g;' >> "$subtemplate"
+				echo "s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;" >> "$subtemplate"
 			elif [[ -f "$key" ]]; then
-				echo 's'$'\02''\{\{\#'"$key"'\}\}'$'\02'"$(tr -d $'\01'$'\02' < "$key" | tr $'\n' $'\01' | sed 's/\&/�UwU�/g')"$'\02''g;' >> "$subtemplate"
+				echo "s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | tr $'\n' "${_tpl_newline}" | sed 's/\&/�UwU�/g')${_tpl_ctrl};" >> "$subtemplate"
 				_template_find_special_uri "$(cat "$key")"
 			fi
 		done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
@@ -99,14 +101,14 @@ function render() {
 	_template_gen_special_uri >> "$tmp"
 
 	if [[ "$3" != true ]]; then # are we recursing?
-		cat "$tmp" | tr '\n' $'\01' | sed -E 's/'$'\02'';'$'\01''/'$'\02'';/g;s/'$'\02''g;'$'\01''/'$'\02''g;/g' > "${tmp}_"
+		cat "$tmp" | tr '\n' "${_tpl_newline}" | sed -E $'s/\02;\01/\02;/g;s/\02g;\01/\02g;/g' > "${tmp}_" # i'm sorry what is this sed replace??
 		
 		echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g' >> "${tmp}_"
-		template="$(tr '\n' $'\01' <<< "$template" | sed -E -f "${tmp}_" | tr $'\01' '\n')"
+		template="$(tr '\n' ${_tpl_newline} <<< "$template" | sed -E -f "${tmp}_" | tr "${_tpl_newline}" '\n')"
 		sed -E 's/�UwU�/\&/g' <<< "$template"
 		rm "$tmp" "${tmp}_"
 	else
-		tr '\n' $'\01' <<< "$template" | sed -E -f "$tmp" | tr $'\01' '\n'
+		tr '\n' "${_tpl_newline}" <<< "$template" | sed -E -f "$tmp" | tr "${_tpl_newline}" '\n'
 		rm "$tmp"
 	fi
 
@@ -139,10 +141,10 @@ _template_gen_special_uri() {
 	# {{-uri-<num>}}, where num is amount of slashed parts to include
 	sort <<< ${_template_uri_list[*]} | uniq | while read num; do
 		uri="$(grep -Poh '^(/.*?){'"$((num+1))"'}' <<< "${r[url_clean]}/")"
-		echo 's'$'\02''\{\{-uri-'"$num"'\}\}'$'\02'"$uri"$'\02''g;'
+		echo "s${_tpl_ctrl}"'\{\{-uri-'"$num"'\}\}'"${_tpl_ctrl}${uri}${_tpl_ctrl}g;"
 	done
 	# for replacing plain {{-uri}} without a number
-	echo 's'$'\02''\{\{-uri\}\}'$'\02'"${r[url_clean]}"$'\02''g;'
+	echo "s${_tpl_ctrl}"'\{\{-uri\}\}'"${_tpl_ctrl}${r[url_clean]}${_tpl_ctrl}g;"
 }
 
 # render_unsafe(array, template_file)
