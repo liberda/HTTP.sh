@@ -11,67 +11,57 @@ function render() {
 	else
 		local template="$(tr -d ${_tpl_ctrl} < "$2" | sed -E 's/\\/\\\\/g')"
 	fi
+	local buf=
 	local -n ref=$1
-	local tmp=$(mktemp)
 
 	local key
 	IFS=$'\n'
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
-			local subtemplate=$(mktemp)
-			echo "$template" | grep "{{start $key}}" -A99999 | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}" > "$subtemplate"
-
-			echo "s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};" >> "$tmp"
+			local subtemplate="$(grep "{{start $key}}" -A99999 <<< "$template" | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}")"
 
 			local -n asdf=${ref["$key"]}
 			local j
 			local value=''
 			for j in ${!asdf[@]}; do
 				local -n fdsa=_${asdf[$j]}
-
-				value+="$(render fdsa "$subtemplate" true)"
+				value+="$(render fdsa /dev/stdin true <<< "$subtemplate")"
 			done
-			value="$(tr -d "${_tpl_ctrl}" <<< "$value" | sed -E "s${_tpl_ctrl}"'\{\{start '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}"'\{\{end '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}")"
 
-			echo "s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};" >> "$tmp"
-			rm "$subtemplate"
+			buf+="s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}" <<< "$value" | sed -E "s${_tpl_ctrl}"'\{\{start '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}"'\{\{end '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}")${_tpl_ctrl};"
+			unset "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
 			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
-			echo "s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp"
+			buf+="s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;"
 		elif [[ "$key" == "+"* ]]; then # date mode
 			if [[ ! "${ref["$key"]}" ]]; then
 				# special case: if the date is empty,
 				# make the output empty too
-				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp"
+				buf+="s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;"
 			else
 				local value
 				printf -v value "%(${cfg[template_date_format]})T" "${ref["$key"]}"
-				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};" >> "$tmp"
+				buf+="s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};"
 			fi
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
-
-			local subtemplate=$(mktemp)
-			echo "s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};" >> "$subtemplate"
 
 			# TODO: check if this is needed?
 			# the code below makes sure to resolve the conditional blocks
 			# *before* anything else. I can't think of *why* this is needed
 			# right now, but I definitely had a reason in this. Question is, what reason.
 			
-			cat <<< $(cat "$subtemplate" "$tmp") > "$tmp" # call that cat abuse
+			buf+="s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};${buf}" # MAYBE_SLOW
 
-			rm "$subtemplate"
 		elif [[ "${ref["$key"]}" != "" ]]; then
-			echo "VALUE: ${ref["$key"]}" > /dev/stderr
 			if [[ "$3" != true ]]; then
 				local value="$(html_encode <<< "${ref["$key"]}" | tr -d "${_tpl_ctrl}" | sed -E 's/\&/�UwU�/g')"
 			else
 				local value="$(echo -n "${ref["$key"]}" | tr -d "${_tpl_ctrl}${_tpl_newline}" | tr $'\n' "${_tpl_newline}" | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
-			echo "s${_tpl_ctrl}\{\{\.$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp"
+			buf+="s${_tpl_ctrl}\{\{\.$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;"
 		else
-			echo "s${_tpl_ctrl}\{\{\.$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp"
+			buf+="s${_tpl_ctrl}\{\{\.$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;"
 		fi
 	done
 	unset IFS
@@ -80,36 +70,32 @@ function render() {
 	# achtung: even though this is *after* the main loop, it actually executes sed reaplces *before* it;
 	# recursion is currently unsupported here, i feel like it may break things?
 	if [[ "$template" == *'{{#'* && "$3" != true ]]; then
-		local subtemplate=$(mktemp)
+		local subtemplate=
 		while read key; do 
 			# below check prevents the loop loading itself as a template.
 			# this is possibly not enough to prevent all recursions, but
 			# i see it as a last-ditch measure. so it'll do here.
 			if [[ "$file" == "$2" ]]; then
-				echo "s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;" >> "$subtemplate"
+				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
 			elif [[ -f "$key" ]]; then
-				echo "s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | tr $'\n' "${_tpl_newline}" | sed 's/\&/�UwU�/g')${_tpl_ctrl};" >> "$subtemplate"
+				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | tr $'\n' "${_tpl_newline}" | sed 's/\&/�UwU�/g')${_tpl_ctrl};"
 				_template_find_special_uri "$(cat "$key")"
 			fi
 		done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
 
-		cat <<< $(cat "$subtemplate" "$tmp") > "$tmp"
-		rm "$subtemplate"
+		buf="${subtemplate}$buf"
 	fi
 
 	_template_find_special_uri "$template"
-	_template_gen_special_uri >> "$tmp"
+	buf+="$(_template_gen_special_uri)"
 
 	if [[ "$3" != true ]]; then # are we recursing?
-		cat "$tmp" | tr '\n' "${_tpl_newline}" | sed -E $'s/\02;\01/\02;/g;s/\02g;\01/\02g;/g' > "${tmp}_" # i'm sorry what is this sed replace??
-		
-		echo 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g' >> "${tmp}_"
-		template="$(tr '\n' ${_tpl_newline} <<< "$template" | sed -E -f "${tmp}_" | tr "${_tpl_newline}" '\n')"
-		sed -E 's/�UwU�/\&/g' <<< "$template"
-		rm "$tmp" "${tmp}_"
+		tr '\n' ${_tpl_newline} <<< "$template" | sed -E -f <(
+			tr '\n' "${_tpl_newline}" <<< "$buf" | sed -E $'s/\02;\01/\02;/g;s/\02g;\01/\02g;/g' # i'm sorry what is this sed replace??
+			echo -n 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g'
+		) | tr "${_tpl_newline}" '\n' | sed -E 's/�UwU�/\&/g'
 	else
-		tr '\n' "${_tpl_newline}" <<< "$template" | sed -E -f "$tmp" | tr "${_tpl_newline}" '\n'
-		rm "$tmp"
+		tr '\n' "${_tpl_newline}" <<< "$template" | sed -E -f <(echo -n "$buf") | tr "${_tpl_newline}" '\n'
 	fi
 
 	[[ "$3" != true ]] && _template_uri_list=()
