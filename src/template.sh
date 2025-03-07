@@ -147,31 +147,6 @@ _template_gen_special_uri() {
 	echo "s${_tpl_ctrl}\{\{-uri\}\}${_tpl_ctrl}${r[url_clean]}${_tpl_ctrl}g;"
 }
 
-# render_unsafe(array, template_file)
-function render_unsafe() {
-	local template="$(cat "$2")"
-	local -n ref=$1
-	local tmp=$(mktemp)
-	for key in ${!ref[@]}; do
-		if [[ "$key" == "_"* ]]; then # iter mode
-			# grep "start _test" -A99999 | grep "end _test" -B99999
-			local -n item_array=${ref["$key"]}
-			local value
-			for ((_i = 0; _i < ${#item_array[@]}; _i++)); do
-				value+="$(xxd -p <<< "${item_array[$_i]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
-			done
-			echo 's/\{\{'"$key"'\}\}/'"$value"'/g' >> "$tmp"
-		else
-			local value="$(xxd -p <<< "${ref["$key"]}" | tr -d '\n' | sed -E 's/../\\x&/g')"
-			echo 's/\{\{\.'"$key"'\}\}/'"$value"'/g' >> "$tmp"
-		fi
-	done
-
-	sed -E -f "$tmp" <<< "$template"
-	rm "$tmp"
-}
-
-
 # mmmm this should be a library because i am so much copying those later
 # _nested_random
 function _nested_random() {
