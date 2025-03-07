@@ -37,16 +37,16 @@ function render() {
 			rm "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
 			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
-			echo "s${_tpl_ctrl}"'\{\{\'"$key"'\}\}'"${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp" #'
+			echo "s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp"
 		elif [[ "$key" == "+"* ]]; then # date mode
 			if [[ ! "${ref["$key"]}" ]]; then
 				# special case: if the date is empty,
 				# make the output empty too
-				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp" #'
+				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp"
 			else
 				local value
 				printf -v value "%(${cfg[template_date_format]})T" "${ref["$key"]}"
-				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};" >> "$tmp" #'
+				echo "s${_tpl_ctrl}\{\{\\$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl};" >> "$tmp"
 			fi
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
@@ -69,9 +69,9 @@ function render() {
 			else
 				local value="$(echo -n "${ref["$key"]}" | tr -d "${_tpl_ctrl}${_tpl_newline}" | tr $'\n' "${_tpl_newline}" | sed -E 's/\\\\/�OwO�/g;s/\\//g;s/�OwO�/\\/g' | html_encode | sed -E 's/\&/�UwU�/g')"
 			fi
-			echo "s${_tpl_ctrl}"'\{\{\.'"$key"'\}\}'"${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp"
+			echo "s${_tpl_ctrl}\{\{\.$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;" >> "$tmp"
 		else
-			echo "s${_tpl_ctrl}"'\{\{\.'"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp"
+			echo "s${_tpl_ctrl}\{\{\.$key\}\}${_tpl_ctrl}${_tpl_ctrl}g;" >> "$tmp"
 		fi
 	done
 	unset IFS
@@ -141,10 +141,10 @@ _template_gen_special_uri() {
 	# {{-uri-<num>}}, where num is amount of slashed parts to include
 	sort <<< ${_template_uri_list[*]} | uniq | while read num; do
 		uri="$(grep -Poh '^(/.*?){'"$((num+1))"'}' <<< "${r[url_clean]}/")"
-		echo "s${_tpl_ctrl}"'\{\{-uri-'"$num"'\}\}'"${_tpl_ctrl}${uri}${_tpl_ctrl}g;"
+		echo "s${_tpl_ctrl}\{\{-uri-$num\}\}${_tpl_ctrl}${uri}${_tpl_ctrl}g;"
 	done
 	# for replacing plain {{-uri}} without a number
-	echo "s${_tpl_ctrl}"'\{\{-uri\}\}'"${_tpl_ctrl}${r[url_clean]}${_tpl_ctrl}g;"
+	echo "s${_tpl_ctrl}\{\{-uri\}\}${_tpl_ctrl}${r[url_clean]}${_tpl_ctrl}g;"
 }
 
 # render_unsafe(array, template_file)
