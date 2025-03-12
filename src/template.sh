@@ -133,12 +133,6 @@ _template_gen_special_uri() {
 	echo "s${_tpl_ctrl}\{\{-uri\}\}${_tpl_ctrl}${r[url_clean]}${_tpl_ctrl}g;"
 }
 
-# mmmm this should be a library because i am so much copying those later
-# _nested_random
-function _nested_random() {
-	dd if=/dev/urandom bs=1 count=16 status=none | xxd -p
-}
-
 # nested_declare(ref)
 function nested_declare() {
 	declare -g -a $1
@@ -146,15 +140,14 @@ function nested_declare() {
 
 # nested_add(ref, array)
 function nested_add() {
-	local nested_id=$(_nested_random)
-	declare -g -A _$nested_id
-
-	local a
-	a="$(declare -p "$2")"
-	# pain
-	eval "${a/ $2=/ -g _$nested_id=}"
-	
+	local nested_id=template_internal_$EPOCHSECONDS$RANDOM$RANDOM$RANDOM$RANDOM$RANDOM$RANDOM
 	local -n ref=$1
+	local -n arr_ref=$2
+
+	local IFS=
+	: "${arr_ref[@]@A}"
+	declare -g -${arr_ref@a} _$nested_id="${_#*=}"
+	
 	ref+=("$nested_id")
 }
 
