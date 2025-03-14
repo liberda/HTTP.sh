@@ -248,7 +248,15 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		done
 		rm $tmpfile
 	else
-		read -r -N "${r[content_length]}" data
+		if [[ "${r[content_length]}" ]]; then
+			read -r -N "${r[content_length]}" data
+		else
+			data=
+			while read -r line; do
+				data+="$line"	
+			done
+			unset line
+		fi
 
 		if [[ "${r[payload_type]}" == "urlencoded" ]]; then
 			unset IFS
