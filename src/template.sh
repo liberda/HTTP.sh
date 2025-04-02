@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # template.sh - basic templating engine
-_tpl_newline=$'\01'
-_tpl_ctrl=$'\02'
 
 # nightmare fuel
 # render(array, template_file, recurse)
 function render() {
+	local _tpl_newline=$'\01'
+	local _tpl_ctrl=$'\02'
+
 	if [[ "$3" != true ]]; then
-		local template="$(tr -d ${_tpl_newline}${_tpl_ctrl} < "$2" | sed 's/\&/�UwU�/g')"
+		local template="$(tr -d "${_tpl_newline}${_tpl_ctrl}" < "$2" | sed 's/\&/�UwU�/g')"
 	else
-		local template="$(tr -d ${_tpl_ctrl} < "$2" | sed -E 's/\\/\\\\/g')"
+		local template="$(tr -d "${_tpl_ctrl}" < "$2" | sed -E 's/\\/\\\\/g')"
 	fi
 	local buf=
 	local -n ref=$1
