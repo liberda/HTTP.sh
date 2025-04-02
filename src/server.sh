@@ -38,6 +38,7 @@ shopt -s nocasematch # only for initial parse; saves us *many* sed calls
 
 if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS, HEAD
 	r[method]="${param%% *}"
+	r[method]="${r[method]^^}"
 	read -r param
 	[[ "${r[method],,}" != "get" ]] && r[post]=true
 	r[url]="$(sed -E 's/^ *//;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
