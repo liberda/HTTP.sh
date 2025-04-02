@@ -5,6 +5,7 @@
 function worker_add() {
 	if [[ -x "${cfg[namespace]}/workers/$1/worker.sh" ]]; then
 		echo "[WRKR] adding worker $1"
+		touch "${cfg[namespace]}/workers/$1/control"
 		{
 			shopt -s extglob
 			x() { declare -p data;} # for notORM
