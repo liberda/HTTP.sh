@@ -58,6 +58,10 @@ output (for filling out hidden form values, etc.)
 Template includes are special, in that you don't have to define them in the array.
 They get processed first to "glue together" one singular template.
 
+Currently, the path starts at the root of HTTPsh's directory. We don't support expanding variables
+inside the include tag, so for now you'll need to hardcode `{{#app/templates/...}}`. This will
+likely get changed in a future release, starting the path in your namespace.
+
 **Warning**: No recursion is supported within included templates; This means that you can't have
 an "include chain". Furthermore, some interactions between included templates and loops/ifs are
 a bit wonky; This will get ironed out at some point (sorry!)
