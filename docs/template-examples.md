@@ -14,10 +14,10 @@ render str "${cfg[namespace]}/templates/main.htm"
 ```
 
 `render` is the core of the templating engine; it takes an assoc array, iterates over it, applies
-additional magic and outputs the response directly to stdout. It is likely the last thing you want
+additional magic and outputs the response directly to stdout. It is likely the final thing you want
 to run in your script.
 
-The script above has referenced a HTML file. For this example, we put it under
+The script above has referenced an HTML file; For this example, we put it under
 `app/templates/main.htm`, but you're free to use any directory structure for this.
 
 ```
@@ -74,7 +74,7 @@ And the corresponding template:
 
 50% of the time the variable will be set, 50% it won't. Hence, it will display either heads or tails :)
 
-Of note: if you hate repeating yourself, this can be done inline:
+Of note: if you hate repeating yourself, this template can be done inline:
 
 ```
 It's {{start ?random}}heads{{else ?random}}tails{{end ?random}}!
@@ -124,7 +124,7 @@ The result repeats the whole "subtemplate" between list start and end:
 
 ![list so long that the numbers go off-screen!](https://f.sakamoto.pl/IwI0slukA.png)
 
-This is very useful for rendering tables:
+This is very useful for rendering data in tables:
 
 ```
 	<table>

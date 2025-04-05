@@ -32,7 +32,7 @@ recurse or not. This is mostly used internally, you likely won't ever need to se
 | --- | --- |
 | In the template | `{{.<name>}}` |
 | In the code | `array[<name>]="<value>"` |
-| Notes | For your convenience, code representation skips the code. |
+| Notes | For your convenience, code representation skips the dot. |
 
 **Important**: to simplify your life (and protect your application), simple replaces ALWAYS use
 html_encode behind the scenes. This means that you're safe to assign any value to them without
@@ -111,7 +111,7 @@ A more detailed usage description is available on the [template examples](templa
 
 You should excercise caution when handling the temporary arrays; Calling `unset elem` on the end
 of each loop may be a good idea if you can't guarantee that all of your elements will always have
-values. Otherwise, values from previous iterations may leak to the current one, causing confusion.
+values. Otherwise, values from previous iterations may leak to the current one, potentially causing confusion.
 
 ## Loop indexes
 
@@ -119,7 +119,7 @@ values. Otherwise, values from previous iterations may leak to the current one, 
 | --- | --- |
 | In the template | `{{-index}}` |
 | In the code | n/a |
-| Notes | Doesn't resolve at all outside arrays. Counter starts at 0 and gets incremented with every element. |
+| Notes | Doesn't resolve at all outside loops. Counter starts at 0 and gets incremented with every element. |
 
 ## Date pretty-printing
 
@@ -128,7 +128,7 @@ values. Otherwise, values from previous iterations may leak to the current one, 
 | In the template | `{{+<name>}}` |
 | In the code | `array[+<name>]="<timestamp>"` |
 
-This saves you from a few messy calls to `date`. Input is an unix timestamp.
+This saves you from a few messy calls to `date`. Input is a UNIX timestamp.
 
 The date format can be overriden by changing a config variable. Default is
 `cfg[template_date_format]='%Y-%m-%d %H:%M:%S'`.
@@ -149,9 +149,9 @@ Given an URL `http://localhost:1337/hello/world/asdf`...
 - `{{-uri-1}}` -> `/hello/`
 - `{{-uri-2}}` -> `/hello/world/`
 - `{{-uri-3}}` -> `/hello/world/asdf/`
-- `{{-uri-4}}` -> `` (higher values are always empty)
+- `{{-uri-4}}` -> none (higher values are always empty)
 
 This is very useful when creating menus; Instead of relying on hardcoded values, if the page is always
-on *one URI level*, one can create links such as `<a href="{{-uri-2}}meow">(...)</a>`, which will always
-resolve to the same file; This eliminates a whole class of bugs where trailing slashes could break some
+on *the same URI level*, one can create links such as `<a href="{{-uri-2}}meow">(...)</a>`, which will always
+resolve to the same file; This eliminates a whole class of bugs where trailing slashes would break some
 poorly-written relative URLs.
