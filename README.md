@@ -13,6 +13,7 @@ We have some guides and general documentation in the [docs](docs/) directory. Am
 - [CLI usage](docs/running.md)
 - [Tests](docs/tests.md)
 - [HTTP Router](docs/router.md)
+- [Template engine](docs/template.md)
 - [List of security fixes](docs/sec-fixes/)
 
 ## Dependencies
