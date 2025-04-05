@@ -20,13 +20,15 @@ function render() {
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
 			local subtemplate="$(grep "{{start $key}}" -A99999 <<< "$template" | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}")"
-
 			local -n asdf=${ref["$key"]}
 			local j
 			local value=''
+			local _index=0
 			for j in ${!asdf[@]}; do
 				local -n fdsa=_${asdf[$j]}
+				fdsa["-index"]="$_index"
 				value+="$(render fdsa /dev/stdin true <<< "$subtemplate")"
+				(( _index++ ))
 			done
 
 			buf+="s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}" <<< "$value" | sed -E "s${_tpl_ctrl}"'\{\{start '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}"'\{\{end '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}")${_tpl_ctrl};"
@@ -34,6 +36,8 @@ function render() {
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
 			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
 			buf+="s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;"
+		elif [[ "$key" == "-index" && "$3" == true ]]; then # foreach index mode
+			buf+="s${_tpl_ctrl}\{\{\-index\}\}${_tpl_ctrl}${_index}${_tpl_ctrl}g;"
 		elif [[ "$key" == "+"* ]]; then # date mode
 			if [[ ! "${ref["$key"]}" ]]; then
 				# special case: if the date is empty,
