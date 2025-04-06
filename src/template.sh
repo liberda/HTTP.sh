@@ -13,13 +13,43 @@ function render() {
 		local template="$(tr -d "${_tpl_ctrl}" < "$2" | sed -E 's/\\/\\\\/g')"
 	fi
 	local buf=
+	local garbage=
 	local -n ref=$1
+
+	# process file includes;
+	# recursion is currently unsupported here, i feel like it may break things?
+	if [[ "$template" == *'{{#'* && "$3" != true ]]; then
+		local subtemplate=
+		while read key; do 
+			# below check prevents the loop loading itself as a template.
+			# this is possibly not enough to prevent all recursions, but
+			# i see it as a last-ditch measure. so it'll do here.
+			if [[ "$file" == "$2" ]]; then
+				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
+			elif [[ -f "$key" ]]; then
+				local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | sed 's/\&/�UwU�/g')"
+				garbage+="$input"$'\n'
+				input="$(tr $'\n' "${_tpl_newline}" <<< "$input")" # for another hack
+				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}${input}${_tpl_ctrl};"
+				_template_find_special_uri "$(cat "$key")"
+			fi
+		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
+
+		buf="${subtemplate}$buf"
+	fi
 
 	local key
 	IFS=$'\n'
 	for key in ${!ref[@]}; do
 		if [[ "$key" == "_"* ]]; then # iter mode
-			local subtemplate="$(grep "{{start $key}}" -A99999 <<< "$template" | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}")"
+			# THE MOST EVIL OF ALL HACKS:
+			# we're scraping a subtemplate from our main template.
+			# HOWEVER: this fails on included templates, because they're not real.
+			# this means that iterators can't work on included templates
+			#
+			# workaround? collect all includes, concatenate them all together and just.
+			# use that pile of garbage here along with the real template. it works!
+			local subtemplate="$(grep "{{start $key}}" -A99999 <<< "$template"$'\n'"$garbage" | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}")"
 			local -n asdf=${ref["$key"]}
 			local j
 			local value=''
@@ -51,12 +81,7 @@ function render() {
 		elif [[ "$key" == '?'* ]]; then
 			local _key="\\?${key/?/}"
 
-			# TODO: check if this is needed?
-			# the code below makes sure to resolve the conditional blocks
-			# *before* anything else. I can't think of *why* this is needed
-			# right now, but I definitely had a reason in this. Question is, what reason.
-			
-			buf="s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};${buf}" # MAYBE_SLOW
+			buf+="s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};"
 
 		elif [[ "${ref["$key"]}" != "" ]]; then
 			if [[ "$3" != true ]]; then
@@ -70,26 +95,6 @@ function render() {
 		fi
 	done
 	unset IFS
-
-	# process file includes;
-	# achtung: even though this is *after* the main loop, it actually executes sed reaplces *before* it;
-	# recursion is currently unsupported here, i feel like it may break things?
-	if [[ "$template" == *'{{#'* && "$3" != true ]]; then
-		local subtemplate=
-		while read key; do 
-			# below check prevents the loop loading itself as a template.
-			# this is possibly not enough to prevent all recursions, but
-			# i see it as a last-ditch measure. so it'll do here.
-			if [[ "$file" == "$2" ]]; then
-				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
-			elif [[ -f "$key" ]]; then
-				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | tr $'\n' "${_tpl_newline}" | sed 's/\&/�UwU�/g')${_tpl_ctrl};"
-				_template_find_special_uri "$(cat "$key")"
-			fi
-		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
-
-		buf="${subtemplate}$buf"
-	fi
 
 	_template_find_special_uri "$template"
 	buf+="$(_template_gen_special_uri)"
