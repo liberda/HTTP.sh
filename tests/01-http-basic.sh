@@ -158,7 +158,7 @@ server_req_header_dup() {
 server_req_header_invalid() {
 	tst() {
 		# we have to trick curl into sending an invalid header for us
-		curl -s "localhost:1337/meow.shs" -H $'a:\nasdf asdf asdf asdf' -H "meow: asdf"
+		curl -s "localhost:1337/meow.shs" -H $'meow:\nasdf asdf asdf asdf' -H "a: aaaa"
 	}
 
 	match_not="asdf"
