@@ -31,7 +31,7 @@ function render() {
 				(( _index++ ))
 			done
 
-			buf+="s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}" <<< "$value" | sed -E "s${_tpl_ctrl}"'\{\{start '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}"'\{\{end '"$key"'\}\}'"${_tpl_ctrl}${_tpl_ctrl}")${_tpl_ctrl};"
+			buf+="s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}" <<< "$value" | sed "s${_tpl_ctrl}{{start $key}}${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}{{end $key}}${_tpl_ctrl}${_tpl_ctrl}")${_tpl_ctrl};"
 			unset "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
 			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
@@ -56,7 +56,7 @@ function render() {
 			# *before* anything else. I can't think of *why* this is needed
 			# right now, but I definitely had a reason in this. Question is, what reason.
 			
-			buf+="s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};${buf}" # MAYBE_SLOW
+			buf="s${_tpl_ctrl}"'\{\{start '"$_key"'\}\}((.*)\{\{else '"$_key"'\}\}.*\{\{end '"$_key"'\}\}|(.*)\{\{end '"$_key"'\}\})'"${_tpl_ctrl}"'\2\3'"${_tpl_ctrl};${buf}" # MAYBE_SLOW
 
 		elif [[ "${ref["$key"]}" != "" ]]; then
 			if [[ "$3" != true ]]; then
@@ -86,7 +86,7 @@ function render() {
 				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | tr $'\n' "${_tpl_newline}" | sed 's/\&/�UwU�/g')${_tpl_ctrl};"
 				_template_find_special_uri "$(cat "$key")"
 			fi
-		done <<< "$(grep -Poh '{{#.*?}}' <<< "$template" | sed 's/{{#//;s/}}$//')"
+		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
 
 		buf="${subtemplate}$buf"
 	fi
@@ -95,8 +95,8 @@ function render() {
 	buf+="$(_template_gen_special_uri)"
 
 	if [[ "$3" != true ]]; then # are we recursing?
-		tr '\n' ${_tpl_newline} <<< "$template" | sed -E -f <(
-			tr '\n' "${_tpl_newline}" <<< "$buf" | sed -E $'s/\02;\01/\02;/g;s/\02g;\01/\02g;/g' # i'm sorry what is this sed replace??
+		tr '\n' "${_tpl_newline}" <<< "$template" | sed -E -f <(
+			tr '\n' "${_tpl_newline}" <<< "$buf" | sed $'s/\02;\01/\02;/g;s/\02g;\01/\02g;/g' # i'm sorry what is this sed replace??
 			echo -n 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g'
 		) | tr "${_tpl_newline}" '\n' | sed -E 's/�UwU�/\&/g'
 	else
