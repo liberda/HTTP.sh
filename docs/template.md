@@ -155,3 +155,15 @@ This is very useful when creating menus; Instead of relying on hardcoded values,
 on *the same URI level*, one can create links such as `<a href="{{-uri-2}}meow">(...)</a>`, which will always
 resolve to the same file; This eliminates a whole class of bugs where trailing slashes would break some
 poorly-written relative URLs.
+
+## Set statement
+
+| | |
+| --- | --- |
+| In the template | `{{-set-<name>}}` |
+| In the code | n/a |
+| Notes | Very simple, processed out of order, nesting in conditional statements will not work. |
+
+If `{{-set-<name>}}` exists anywhere within your processed template (including the included templates),
+`array[?<name>]` will get set internally. This can be used to conditionally enable parts of another template
+based on what other templates are loaded.
