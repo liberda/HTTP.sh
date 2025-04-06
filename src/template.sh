@@ -35,7 +35,7 @@ function render() {
 			fi
 		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
 
-		buf="${subtemplate}$buf"
+		buf+="${subtemplate}"
 	fi
 
 	local key
