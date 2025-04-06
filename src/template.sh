@@ -38,6 +38,13 @@ function render() {
 		buf+="${subtemplate}"
 	fi
 
+	# process special set statements
+	if [[ "$template"$'\n'"$garbage" == *'{{-set-'* ]]; then
+		while read key; do
+			ref["?$key"]=_
+		done <<< "$(grep -Poh '{{-set-\K(.*?)(?=}})' <<< "$template")"
+	fi
+
 	local key
 	IFS=$'\n'
 	for key in ${!ref[@]}; do
