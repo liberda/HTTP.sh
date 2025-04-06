@@ -252,11 +252,13 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		if [[ "${r[content_length]}" ]]; then
 			read -r -N "${r[content_length]}" data
 		else
-			data=
-			while read -r line; do
-				data+="$line"	
-			done
-			unset line
+			if read -t0; then
+				data=
+				while read -r line; do
+					data+="$line"
+				done
+				unset line
+			fi
 		fi
 
 		if [[ "${r[payload_type]}" == "urlencoded" ]]; then
