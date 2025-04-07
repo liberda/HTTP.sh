@@ -13,7 +13,7 @@ function render() {
 		local template="$(tr -d "${_tpl_ctrl}" < "$2" | sed -E 's/\\/\\\\/g')"
 	fi
 	local buf=
-	local garbage=
+	local garbage="$template"$'\n'
 	local -n ref=$1
 
 	# process file includes;
@@ -39,10 +39,10 @@ function render() {
 	fi
 
 	# process special set statements
-	if [[ "$template"$'\n'"$garbage" == *'{{-set-'* ]]; then
+	if [[ "$garbage" == *'{{-set-'* ]]; then
 		while read key; do
 			ref["?$key"]=_
-		done <<< "$(grep -Poh '{{-set-\K(.*?)(?=}})' <<< "$template")"
+		done <<< "$(grep -Poh '{{-set-\K(.*?)(?=}})' <<< "$garbage" )"
 	fi
 
 	local key
@@ -56,7 +56,7 @@ function render() {
 			#
 			# workaround? collect all includes, concatenate them all together and just.
 			# use that pile of garbage here along with the real template. it works!
-			local subtemplate="$(grep "{{start $key}}" -A99999 <<< "$template"$'\n'"$garbage" | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}")"
+			local subtemplate="$(grep "{{start $key}}" -A99999 <<< "$garbage" | grep "{{end $key}}" -B99999 | tr '\n' "${_tpl_newline}")"
 			local -n asdf=${ref["$key"]}
 			local j
 			local value=''
