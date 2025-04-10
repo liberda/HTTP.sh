@@ -42,7 +42,7 @@ function render() {
 	if [[ "$garbage" == *'{{-set-'* ]]; then
 		while read key; do
 			ref["?$key"]=_
-		done <<< "$(grep -Poh '{{-set-\K(.*?)(?=}})' <<< "$garbage" )"
+		done <<< "$(grep -Poh '{{-set-\K(.*?)(?=}})' <<< "$garbage" | sed 's/[^a-z0-9_-]//g')"
 	fi
 
 	local key
