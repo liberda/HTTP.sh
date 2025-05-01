@@ -88,6 +88,27 @@ notORM_replace_oldsyntax() {
 	}
 }
 
+notORM_backslashes() {
+	tst() {
+		a=('\0meow')
+		data_add "$store" a
+		a=('awawa')
+		data_add "$store" a
+
+		# checks whether data didn't get mangled and can be retrieved
+		data_get "$store" { '\0meow' } || return $?
+
+		# tries to delete the entry, then checks if it got matched
+		data_yeet "$store" { '\0meow' }
+		data_get "$store" { '\0meow' }
+		if [[ $? == 0 ]]; then
+			return 1
+		fi
+
+		return 0
+	}	
+}
+
 subtest_list=(
 	notORM_add_get
 	notORM_get_multiline
@@ -97,4 +118,5 @@ subtest_list=(
 	notORM_yeet
 	notORM_yeet_multiple_filters
 	notORM_replace_oldsyntax
+	notORM_backslashes
 )
