@@ -319,11 +319,13 @@ data_yeet() {
 
 _sed_sanitize() {
 	_trim_control "$1"
-	echo -n "$tr" | xxd -p | tr -d '\n' | sed 's/../\\x&/g'
+	# first, replace backslashes with even more backslashes (workaround for sed bug)
+	# then, do the actual sanitization, take whole expr as a hexstring and pass it on.
+	echo -n "$tr" | sed 's/\\/\\\\/g' | xxd -p | tr -d '\n' | sed 's/../\\x&/g'
 }
 
 _sed_sanitize_array() {
-	echo -n "$1" | xxd -p | tr -d '\n' | sed 's/../\\x&/g'
+	echo -n "$1" | sed 's/\\/\\\\/g' | xxd -p | tr -d '\n' | sed 's/../\\x&/g'
 }
 
 # _trim_control(string) -> $tr
