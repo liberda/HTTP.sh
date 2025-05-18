@@ -6,11 +6,18 @@
 function render() {
 	local _tpl_newline=$'\01'
 	local _tpl_ctrl=$'\02'
+	local tplfile
+
+	_template_find_absolute_path "$2"
+
+	if [[ ! "$tplfile" ]]; then
+		exit 1 # fail hard
+	fi
 
 	if [[ "$3" != true ]]; then
-		local template="$(tr -d "${_tpl_newline}${_tpl_ctrl}" < "$2" | sed 's/\&/�UwU�/g')"
+		local template="$(tr -d "${_tpl_newline}${_tpl_ctrl}" < "$tplfile" | sed 's/\&/�UwU�/g')"
 	else
-		local template="$(tr -d "${_tpl_ctrl}" < "$2" | sed -E 's/\\/\\\\/g')"
+		local template="$(tr -d "${_tpl_ctrl}" < "$tplfile" | sed -E 's/\\/\\\\/g')"
 	fi
 	local buf=
 	local garbage="$template"$'\n'
@@ -24,14 +31,19 @@ function render() {
 			# below check prevents the loop loading itself as a template.
 			# this is possibly not enough to prevent all recursions, but
 			# i see it as a last-ditch measure. so it'll do here.
-			if [[ "$file" == "$2" ]]; then
+			if [[ "$file" == "$tplfile" ]]; then
 				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
-			elif [[ -f "$key" ]]; then
-				local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$key" | sed 's/\&/�UwU�/g')"
+			# elif [[ -f "$key" ]]; then
+			else
+				local i
+				local IFS=''
+
+				_template_find_absolute_path "$key"
+				local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$tplfile" | sed 's/\&/�UwU�/g')"
 				garbage+="$input"$'\n'
 				input="$(tr $'\n' "${_tpl_newline}" <<< "$input")" # for another hack
 				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}${input}${_tpl_ctrl};"
-				_template_find_special_uri "$(cat "$key")"
+				_template_find_special_uri "$(cat "$tplfile")"
 			fi
 		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
 
@@ -118,6 +130,27 @@ function render() {
 	[[ "$3" != true ]] && _template_uri_list=()
 }
 
+# internal function that looks for the current template. uses path relative to
+# the namespace, unless overriden with ${template_relative_paths[@]}
+#
+# - /dev/stdin is a special value, which gets passed literally.
+# - /dev/fd/* allows file substitutions `<(echo ...)` to be used.
+#
+# _template_find_absolute_path(name) -> $tplfile
+_template_find_absolute_path() {
+	if [[ ! "${template_relative_paths}" || "$1" == /dev/stdin || "$1" == "/dev/fd/"* ]]; then
+		tplfile="$1"
+	else
+		for (( i=0; i<${#template_relative_paths[@]}; i++ )); do
+			if [[ -f "${template_relative_paths[i]}/$1" ]]; then
+				tplfile="${template_relative_paths[i]}/$1"
+				break
+			fi
+		done
+	fi
+
+}
+
 _template_uri_list=()
 # internal function that finds all occurences of the special `{{-uri-N}}` tag.
 # here to also make it run on subtemplates
@@ -168,8 +201,9 @@ function nested_add() {
 	ref+=("$nested_id")
 }
 
-# nested_get(ref, i)
+# nested_get(ref, i, [res])
 function nested_get() {
 	local -n ref=$1
-	declare -g -n res=_${ref["$2"]}
+	local name=${3:-res}
+	declare -g -n $name=_${ref["$2"]}
 }
