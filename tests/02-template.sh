@@ -51,6 +51,45 @@ tpl_date_invalid() {
 	match="value: 1970-01-01 01:00:00"
 }
 
+tpl_path_custom() {
+	prepare() {
+		declare -ga template_relative_paths=("/tmp/")
+
+		tempfile="$(mktemp)" || return 1
+	}
+
+	tst() {
+		declare -A meow
+		render meow "$(basename "$tempfile")"
+	}
+}
+
+tpl_path_inheritance() {
+	prepare() {
+		tempdir="$(mktemp -d)" || return 1
+		declare -ga template_relative_paths=(
+			"$tempdir"
+			"/tmp/"
+		)
+	}
+}
+
+tpl_path_include() {
+	prepare() {
+		another_tempfile="$(mktemp)"
+		echo "meow?" > "$another_tempfile"
+		echo "{{#$(basename "$another_tempfile")}}" > "$tempfile"
+	}
+
+	match="meow?"
+
+	cleanup() {
+		rm -R "$tempdir"
+		rm "$tempfile" "$another_tempfile"
+	}
+}
+
+
 subtest_list=(
 	tpl_basic
 	tpl_basic_specialchars
@@ -59,4 +98,8 @@ subtest_list=(
 	tpl_date
 	tpl_date_empty
 	tpl_date_invalid
+
+	tpl_path_custom
+	tpl_path_inheritance
+	tpl_path_include
 )
