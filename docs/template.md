@@ -23,8 +23,34 @@ For practical examples, see the [template examples](template-examples.md) page.
 `render <assoc_array> <file> [recurse]`
 
 The first param points to an associative array containing the replacement data. Second one points
-to a file containing the template itself. Third is optional, and controls whether `render` will
-recurse or not. This is mostly used internally, you likely won't ever need to set it.
+to a file containing the template itself (see section below for special usage). Third is optional,
+and controls whether `render` will recurse or not (this is mostly used internally, you likely
+won't ever need to set it).
+
+### File paths
+
+Starting with HTTP.sh 0.97.1 (2025-05-18), paths in calls to `render` and include tags are
+relative to the namespace directory (usually `app/`). This behavior can be changed by defining
+an array called `template_relative_paths`:
+
+```
+template_relative_paths=(
+	"${cfg[namespace]}/templates/neue_theme/"
+	"${cfg[namespace]}/templates/default/"
+)
+```
+
+The templating engine will check all the files in order and pick the first one that exists. This
+can be used to implement basic inheritance.
+
+Before 0.97.1, paths were relative to the main HTTP.sh directory. Take care when upgrading, either
+fix the paths, or set `template_relative_paths="./"` to emulate the previous behavior.
+
+### Inline templates
+
+For some purposes, it may be beneficial to store the template within the script file itself.
+This can be done either through passing `/dev/stdin` as a file name, or through inlining
+a file substitution, such as `<(echo ...)`.
 
 ## Simple replace
 
@@ -58,9 +84,8 @@ output (for filling out hidden form values, etc.)
 Template includes are special, in that you don't have to define them in the array.
 They get processed first to "glue together" one singular template.
 
-Currently, the path starts at the root of HTTPsh's directory. We don't support expanding variables
-inside the include tag, so for now you'll need to hardcode `{{#app/templates/...}}`. This will
-likely get changed in a future release, starting the path in your namespace.
+The path starts at the root of your namespace (usually `app/`). This behavior can be changed,
+see section "File paths" above.
 
 **Warning**: No recursion is supported within included templates; This means that you can't have
 an "include chain". Furthermore, some interactions between included templates and loops/ifs are

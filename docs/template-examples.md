@@ -10,7 +10,7 @@ declare -A str
 str[title]="Hello, world!"
 str[test]="meow"
 
-render str "${cfg[namespace]}/templates/main.htm"
+render str "templates/main.htm"
 ```
 
 `render` is the core of the templating engine; it takes an assoc array, iterates over it, applies
@@ -18,7 +18,10 @@ additional magic and outputs the response directly to stdout. It is likely the f
 to run in your script.
 
 The script above has referenced an HTML file; For this example, we put it under
-`app/templates/main.htm`, but you're free to use any directory structure for this.
+`app/templates/main.htm`, but you're free to use any directory structure for this. An observant
+reader might have noticed the relative path; All paths are treated as relative to the namespace's
+directory. This behavior can be modified by setting `template_relative_paths`, which is described
+in greater detail by the [main template documentation](./template.md).
 
 ```
 <!DOCTYPE html>
@@ -100,7 +103,7 @@ done
 # once we have a full list of elements, assign it to the array passed to render
 str[_list]=list
 
-render str "${cfg[namespace]}/templates/main.htm"
+render str "templates/main.htm"
 ```
 
 And the template...
@@ -182,7 +185,7 @@ declare -A str
 str[title]="time pretty-print"
 str[+time]="$EPOCHSECONDS"
 
-render str "${cfg[namespace]}/templates/main.htm"
+render str "templates/main.htm"
 ```
 
 ![netscape displays the current date and time](https://f.sakamoto.pl/IwIvf3Axw.png)
