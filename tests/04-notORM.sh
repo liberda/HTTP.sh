@@ -106,7 +106,32 @@ notORM_backslashes() {
 		fi
 
 		return 0
-	}	
+	}
+
+	cleanup() {
+		rm "$store"
+	}
+}
+
+notORM_add_autoincrement() {
+	prepare() {
+		a=("meow" "nyaa")
+		data_add "$store" a true
+		data_add "$store" a true
+		a=("nyaa" "...")
+		data_add "$store" a true
+	}
+
+	tst() {
+		data_get "$store" { 2 } { "..." 2 } || return 1
+		echo -n "${res[1]}"
+	}
+
+	match="nyaa"
+
+	cleanup() {
+		rm "$store"
+	}
 }
 
 subtest_list=(
@@ -119,4 +144,5 @@ subtest_list=(
 	notORM_yeet_multiple_filters
 	notORM_replace_oldsyntax
 	notORM_backslashes
+	notORM_add_autoincrement
 )
