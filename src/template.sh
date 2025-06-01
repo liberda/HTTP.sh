@@ -27,24 +27,26 @@ function render() {
 	# recursion is currently unsupported here, i feel like it may break things?
 	if [[ "$template" == *'{{#'* && "$3" != true ]]; then
 		local subtemplate=
-		while read key; do 
+		while read key; do
 			# below check prevents the loop loading itself as a template.
 			# this is possibly not enough to prevent all recursions, but
 			# i see it as a last-ditch measure. so it'll do here.
-			if [[ "$file" == "$tplfile" ]]; then
-				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
-			# elif [[ -f "$key" ]]; then
-			else
-				local i
-				local IFS=''
+			local i
+			local IFS=''
 
-				_template_find_absolute_path "$key"
-				local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$tplfile" | sed 's/\&/�UwU�/g')"
-				garbage+="$input"$'\n'
-				input="$(tr $'\n' "${_tpl_newline}" <<< "$input")" # for another hack
-				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}${input}${_tpl_ctrl};"
-				_template_find_special_uri "$(cat "$tplfile")"
+			_old_tplfile="$tplfile"
+			_template_find_absolute_path "$key"
+			if [[ "$(realpath "$tplfile")" == "$_old_tplfile" ]]; then
+				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
+				continue
 			fi
+			# don't even try to include files below httpsh's root
+			[[ "$(realpath "$tplfile")" != "$(dirname "$(realpath "${cfg[namespace]}")")"* ]] && continue
+			local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$tplfile" | sed 's/\&/�UwU�/g')"
+			garbage+="$input"$'\n'
+			input="$(tr $'\n' "${_tpl_newline}" <<< "$input")" # for another hack
+			subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}${input}${_tpl_ctrl};"
+			_template_find_special_uri "$(cat "$tplfile")"
 		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
 
 		buf+="${subtemplate}"
