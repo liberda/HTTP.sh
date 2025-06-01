@@ -140,8 +140,10 @@ function render() {
 #
 # _template_find_absolute_path(name) -> $tplfile
 _template_find_absolute_path() {
-	if [[ ! "${template_relative_paths}" || "$1" == /dev/stdin || "$1" == "/dev/fd/"* ]]; then
+	if [[ "$1" == /dev/stdin || "$1" == "/dev/fd/"* ]]; then
 		tplfile="$1"
+	elif [[ ! "${template_relative_paths}" ]]; then
+		tplfile="${cfg[namespace]}/$1"
 	else
 		for (( i=0; i<${#template_relative_paths[@]}; i++ )); do
 			if [[ -f "${template_relative_paths[i]}/$1" ]]; then
