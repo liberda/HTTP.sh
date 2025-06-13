@@ -224,30 +224,33 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 	# I could have done it as an array, but this solution works, and it's
 	# speedy enough so I don't care.
 
-	if [[ $tmpdir ]]; then
-		declare post_multipart
-		tmpfile=$(mktemp -p $tmpdir)
-		dd iflag=fullblock of=$tmpfile ibs=${r[content_length]} count=1 obs=1M
+	if [[ "$tmpdir" ]]; then
+		if [[ "${cfg[enable_multipart]}" == true ]]; then
+			# FIXME: ugly, potentially leaky, potentially dangerous code ahead
+			declare post_multipart
+			tmpfile=$(mktemp -p $tmpdir)
+			dd iflag=fullblock of=$tmpfile ibs="${r[content_length]}" count=1 obs=1M
 
-		delimeter_len=$(echo -n "${r[content_boundary]}"$'\015' | wc -c)
-		boundaries_list=$(echo -ne $(grep $tmpfile -ao -e ${r[content_boundary]} --byte-offset | sed -E 's/:(.*)//g') | sed -E 's/ [0-9]+$//')
+			delimeter_len=$(echo -n "${r[content_boundary]}"$'\015' | wc -c)
+			boundaries_list=$(echo -ne $(grep $tmpfile -ao -e "${r[content_boundary]}" --byte-offset | sed -E 's/:(.*)//g') | sed -E 's/ [0-9]+$//')
 
-		for i in $boundaries_list; do
-			tmpout=$(mktemp -p $tmpdir)
-			dd iflag=fullblock if=$tmpfile ibs=$(($i+$delimeter_len)) obs=1M skip=1 | while true; do
-				read -r line
-				if [[ $line == $'\015' ]]; then
-					cat - > $tmpout
-					break
-				fi
+			for i in $boundaries_list; do
+				tmpout=$(mktemp -p $tmpdir)
+				dd iflag=fullblock if=$tmpfile ibs=$(($i+$delimeter_len)) obs=1M skip=1 | while true; do
+					read -r line
+					if [[ $line == $'\015' ]]; then
+						cat - > $tmpout
+						break
+					fi
+				done
+				length=$(grep $tmpout --byte-offset -ae ${r[content_boundary]} | sed -E 's/:(.*)//' | head -n 1)
+				outfile=$(mktemp -p $tmpdir)
+				post_multipart+=($outfile)
+				dd iflag=fullblock if=$tmpout ibs=$length count=1 obs=1M of=$outfile
+				rm $tmpout
 			done
-			length=$(grep $tmpout --byte-offset -ae ${r[content_boundary]} | sed -E 's/:(.*)//' | head -n 1)
-			outfile=$(mktemp -p $tmpdir)
-			post_multipart+=($outfile)
-			dd iflag=fullblock if=$tmpout ibs=$length count=1 obs=1M of=$outfile
-			rm $tmpout
-		done
-		rm $tmpfile
+			rm $tmpfile
+		fi
 	else
 		if [[ "${r[content_length]}" ]]; then
 			read -r -N "${r[content_length]}" data
