@@ -145,6 +145,24 @@ This is very useful for rendering data in tables:
 
 ![our example, now rendered as a table](https://f.sakamoto.pl/IwIf39cYw.png)
 
+In this specific example the loop index is readily available; However, if your code iterates over
+a list of strings and you'd need to keep track of an additional index variable, the template
+engine can do it for you with `{{-index}}`:
+
+```
+	<table>
+		<tr>
+			<th>number</th>
+		</tr>
+        {{start _list}}
+            <tr>
+                <td>{{-index}}</td>
+                <td>meow</td>
+            </tr>
+        {{end _list}}
+	</table>
+```
+
 ### integration with notORM
 
 notORM's `data_iter` function works great with nested_add; Body of a callback function can be
