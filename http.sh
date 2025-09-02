@@ -15,9 +15,12 @@ setup_config() {
 	echo "cfg[init_version]=$HTTPSH_VERSION" >> "config/master.sh"
 }
 
-if [[ ! -f "$PWD/http.sh" ]]; then
-		echo -e "Please run HTTP.sh inside its designated directory\nRunning the script from arbitrary locations isn't supported."
-		exit 1
+if [[ "${0##*/}" == "http.sh" ]]; then
+	# make sure that working directory is http.sh root
+	cd "${0%/*}"
+elif [[ ! -f "$PWD/http.sh" ]]; then
+	echo -e "Could not detect HTTP.sh directory\nPlease run HTTP.sh inside its designated directory"
+	exit 1
 fi
 source src/version.sh
 
