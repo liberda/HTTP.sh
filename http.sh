@@ -130,13 +130,19 @@ if [[ -f "${cfg[namespace]}/config.sh" ]]; then
 	unset run_once
 fi
 
+if [[ "${cfg[ip]}" == *":"* ]]; then
+    socat_listen="TCP6-LISTEN"
+else
+    socat_listen="TCP-LISTEN"
+fi
+
 if [[ ${cfg[socat_only]} == true ]]; then
 	echo "[INFO] listening directly via socat, assuming no ncat available"
 	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
 	if [[ ${cfg[dbg]} == true ]]; then
-		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'"
+		socat $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'"
 	else
-		socat tcp-listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
+		socat $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
 		if [[ $? != 0 ]]; then
 			echo "[WARN] socat quit with a non-zero status; Maybe the port is in use?"
 		fi
@@ -157,7 +163,7 @@ else
 				ncat -i 600s -l -U "$socket" -c src/server.sh -k 2>> /dev/null
 			done &
 		fi
-		socat TCP-LISTEN:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
+		socat $socat_listen:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
 		echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
 	fi
 
