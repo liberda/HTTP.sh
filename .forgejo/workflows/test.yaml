@@ -1,7 +1,7 @@
 on: [push]
 jobs:
   test:
-    runs-on: meow
+    runs-on: docker
     steps:
       - uses: actions/checkout@v4
       - run: ls -la
