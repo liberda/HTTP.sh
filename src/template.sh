@@ -85,7 +85,7 @@ function render() {
 			buf+="s${_tpl_ctrl}\{\{start $key\}\}.*\{\{end $key\}\}${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl};s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}$(tr -d "${_tpl_ctrl}" <<< "$value" | sed "s${_tpl_ctrl}{{start $key}}${_tpl_ctrl}${_tpl_ctrl};s${_tpl_ctrl}{{end $key}}${_tpl_ctrl}${_tpl_ctrl}")${_tpl_ctrl};"
 			unset "$subtemplate"
 		elif [[ "$key" == "@"* && "${ref["$key"]}" != '' ]]; then
-			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | sed -E 's/\&/�UwU�/g')"
+			local value="$(tr -d "${_tpl_ctrl}${_tpl_newline}" <<< "${ref["$key"]}" | tr '\n' "${_tpl_newline}" | sed -E 's/\&/�UwU�/g')"
 			buf+="s${_tpl_ctrl}\{\{$key\}\}${_tpl_ctrl}${value}${_tpl_ctrl}g;"
 		elif [[ "$key" == "-index" && "$3" == true ]]; then # foreach index mode
 			buf+="s${_tpl_ctrl}\{\{\-index\}\}${_tpl_ctrl}${_index}${_tpl_ctrl}g;"
