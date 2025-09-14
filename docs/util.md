@@ -32,3 +32,14 @@ $ ./http.sh notORM dump storage/new.dat
 declare -a data=([0]="0" [1]="domi" [2]="http://sdomi.pl/" [3]="" [4]="XOaj44smtzCg1p88fgG7bEnMeTNt361wK8Up4BKEiU747lcNIuMAez60zEiAaALWMwzcQ6" [5]="0" [6]="meow~" [7]="RCszUuBXQI")
  (…)
 ```
+
+### bump
+
+Acknowledges a version after a HTTP.sh update. Takes no parameters.
+
+## Future plans
+
+- List a description for each util on the `./http.sh utils` page. This would require storing more
+  metadata on the utils, TBD.
+- more 1st-party utils!
+- more work on notORM util, ideally it should allow one to do all actions on the DB
