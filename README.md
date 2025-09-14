@@ -14,6 +14,7 @@ We have some guides and general documentation in the [docs](docs/) directory. Am
 - [Tests](docs/tests.md)
 - [HTTP Router](docs/router.md)
 - [Template engine](docs/template.md)
+- [Script integrations](docs/util.md)
 - [List of security fixes](docs/sec-fixes/)
 
 ## Dependencies

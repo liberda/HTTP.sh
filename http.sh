@@ -103,7 +103,9 @@ if [[ "$1" == 'shell' ]]; then
 fi
 
 if [[ "$1" == "utils" ]]; then # list all available utils
-	ls "${cfg[namespace]}/util/"
+	# would be cool to make this more generic
+	ls "${cfg[namespace]}/util/" "src/util"
+	exit 0
 fi
 
 for path in "${cfg[namespace]}/util/" "src/util/"; do
