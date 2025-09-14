@@ -107,8 +107,8 @@ if [[ "$1" == "utils" ]]; then # list all available utils
 fi
 
 for path in "${cfg[namespace]}/util/" "src/util/"; do
-	if [[ -x "$path${1}.sh" ]]; then
-		HTTPSH_SCRIPTNAME="$1"
+	HTTPSH_SCRIPTNAME="$(basename "$1")"
+	if [[ -x "$path$HTTPSH_SCRIPTNAME.sh" ]]; then
 		shift
 		shopt -s extglob
 		source src/account.sh
@@ -120,11 +120,11 @@ for path in "${cfg[namespace]}/util/" "src/util/"; do
 		source "${cfg[namespace]}/config.sh"
 		source "$path$HTTPSH_SCRIPTNAME.sh"
 		exit 0
-	elif [[ -f "$path${1}.sh" ]]; then
-		echo "[WARN] util '$1' found, but not executable. Ignoring..."
+	elif [[ -f "$path$HTTPSH_SCRIPTNAME.sh" ]]; then
+		echo "[WARN] util '$1' found, but not executable. Ignoring..." >&2
 	fi
 done
-unset path
+unset path HTTPSH_SCRIPTNAME
 
 cat <<EOF >&2
  _    _ _______ _______ _____  ______ _    _ 
