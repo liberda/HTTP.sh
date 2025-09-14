@@ -102,6 +102,21 @@ if [[ "$1" == 'shell' ]]; then
 	exit 0
 fi
 
+if [[ -x "${cfg[namespace]}/util/${1}.sh" ]]; then
+	HTTPSH_SCRIPTNAME="$1"
+	shift
+	shopt -s extglob
+	source src/account.sh
+	source src/mail.sh
+	source src/mime.sh
+	source src/misc.sh
+	source src/notORM.sh
+	source src/template.sh
+	source "${cfg[namespace]}/config.sh"
+	source "${cfg[namespace]}/util/$HTTPSH_SCRIPTNAME.sh"
+	exit 0
+fi
+
 cat <<EOF >&2
  _    _ _______ _______ _____  ______ _    _ 
 | |  | |_______|_______|  _  \/  ___/| |  | |
