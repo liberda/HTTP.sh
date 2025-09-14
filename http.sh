@@ -102,20 +102,29 @@ if [[ "$1" == 'shell' ]]; then
 	exit 0
 fi
 
-if [[ -x "${cfg[namespace]}/util/${1}.sh" ]]; then
-	HTTPSH_SCRIPTNAME="$1"
-	shift
-	shopt -s extglob
-	source src/account.sh
-	source src/mail.sh
-	source src/mime.sh
-	source src/misc.sh
-	source src/notORM.sh
-	source src/template.sh
-	source "${cfg[namespace]}/config.sh"
-	source "${cfg[namespace]}/util/$HTTPSH_SCRIPTNAME.sh"
-	exit 0
+if [[ "$1" == "utils" ]]; then # list all available utils
+	ls "${cfg[namespace]}/util/"
 fi
+
+for path in "${cfg[namespace]}/util/" "src/util/"; do
+	if [[ -x "$path${1}.sh" ]]; then
+		HTTPSH_SCRIPTNAME="$1"
+		shift
+		shopt -s extglob
+		source src/account.sh
+		source src/mail.sh
+		source src/mime.sh
+		source src/misc.sh
+		source src/notORM.sh
+		source src/template.sh
+		source "${cfg[namespace]}/config.sh"
+		source "$path$HTTPSH_SCRIPTNAME.sh"
+		exit 0
+	elif [[ -f "$path${1}.sh" ]]; then
+		echo "[WARN] util '$1' found, but not executable. Ignoring..."
+	fi
+done
+unset path
 
 cat <<EOF >&2
  _    _ _______ _______ _____  ______ _    _ 
