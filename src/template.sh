@@ -8,11 +8,7 @@ function render() {
 	local _tpl_ctrl=$'\02'
 	local tplfile
 
-	_template_find_absolute_path "$2"
-
-	if [[ ! "$tplfile" ]]; then
-		exit 1 # fail hard
-	fi
+	_template_find_absolute_path "$2" || exit 1
 
 	if [[ "$3" != true ]]; then
 		local template="$(tr -d "${_tpl_newline}${_tpl_ctrl}" < "$tplfile" | sed 's/\&/�UwU�/g')"
@@ -27,6 +23,7 @@ function render() {
 	# recursion is currently unsupported here, i feel like it may break things?
 	if [[ "$template" == *'{{#'* && "$3" != true ]]; then
 		local subtemplate=
+		local _old_tplfile="$tplfile"
 		while read key; do
 			# below check prevents the loop loading itself as a template.
 			# this is possibly not enough to prevent all recursions, but
@@ -34,19 +31,20 @@ function render() {
 			local i
 			local IFS=''
 
-			_old_tplfile="$tplfile"
-			_template_find_absolute_path "$key"
-			if [[ "$(realpath "$tplfile")" == "$_old_tplfile" ]]; then
+			_template_find_absolute_path "$key" || continue
+			local tplfile_real="$(realpath "$tplfile")"
+
+			if [[ "$tplfile_real" == "$_old_tplfile" ]]; then
 				subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}I cowardly refuse to endlessly recurse\!${_tpl_ctrl}g;"
 				continue
 			fi
 			# don't even try to include files below httpsh's root
-			[[ "$(realpath "$tplfile")" != "$(dirname "$(realpath "${cfg[namespace]}")")"* ]] && continue
-			local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$tplfile" | sed 's/\&/�UwU�/g')"
+			[[ "$tplfile_real" != "$(dirname "$(realpath "${cfg[namespace]}")")"* ]] && continue
+			local input="$(tr -d "${_tpl_ctrl}${_tpl_newline}" < "$tplfile_real" | sed 's/\&/�UwU�/g')"
 			garbage+="$input"$'\n'
 			input="$(tr $'\n' "${_tpl_newline}" <<< "$input")" # for another hack
 			subtemplate+="s${_tpl_ctrl}\{\{\#$key\}\}${_tpl_ctrl}${input}${_tpl_ctrl};"
-			_template_find_special_uri "$(cat "$tplfile")"
+			_template_find_special_uri "$(cat "$tplfile_real")"
 		done <<< "$(grep -Poh '{{#\K(.*?)(?=}})' <<< "$template")"
 
 		buf+="${subtemplate}"
@@ -140,19 +138,22 @@ function render() {
 #
 # _template_find_absolute_path(name) -> $tplfile
 _template_find_absolute_path() {
+	unset tplfile
 	if [[ "$1" == /dev/stdin || "$1" == "/dev/fd/"* ]]; then
 		tplfile="$1"
+		return
 	elif [[ ! "${template_relative_paths}" ]]; then
 		tplfile="${cfg[namespace]}/$1"
+		return
 	else
 		for (( i=0; i<${#template_relative_paths[@]}; i++ )); do
 			if [[ -f "${template_relative_paths[i]}/$1" ]]; then
 				tplfile="${template_relative_paths[i]}/$1"
-				break
+				return
 			fi
 		done
 	fi
-
+	return 1
 }
 
 _template_uri_list=()
