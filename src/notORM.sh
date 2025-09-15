@@ -190,7 +190,7 @@ data_iter() {
 	[[ ! -f "$1" ]] && return 4
 	local store="$1"
 	local IFS=$'\n'
-	local r=2
+	local _r=2
 
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
@@ -216,10 +216,10 @@ data_iter() {
 		done
 		"$callback" # only reached if an entry matched all constraints
 		[[ $? == 255 ]] && return 255
-		r=0
+		_r=0
 	done < "$store"
 
-	return $r
+	return $_r
 }
 
 # replace a value in `store` with `array`, filtering by `search`.
