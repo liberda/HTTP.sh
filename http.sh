@@ -61,7 +61,7 @@ source config/master.sh
 if [[ "$HTTPSH_VERSION" != "${cfg[init_version]}" ]]; then
 	echo "WARN: HTTP.sh was updated since this instance was initialized (config v${cfg[init_version]:-(none)}, runtime v$HTTPSH_VERSION). There may be breaking changes.
 
-Check for breaking changes (announced on IRC and in `git log`),
+Check for breaking changes (announced on IRC and in \`git log\`),
 then use this to ACK the message:
 
 ./http.sh bump"
