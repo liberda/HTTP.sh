@@ -37,7 +37,7 @@ if [[ "$1" == "init" ]]; then # will get replaced with proper parameter parsing 
 	fi
 	source config/master.sh
 	
-	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates"
+	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates" "${cfg[namespace]}/util/"
 	touch "${cfg[namespace]}/config.sh" "${cfg[namespace]}/workers/example/control"
 	cp ".resources/config.sh" "${cfg[namespace]}/config.sh"
 	cp ".resources/routes.sh" "${cfg[namespace]}/routes.sh"

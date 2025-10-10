@@ -4,6 +4,8 @@ HTTP.sh provides a number of useful APIs designed to make interfacing with HTTP 
 Some of those (especially notORM) are also useful in a CLI environment, to help with migrations and
 other administrative tasks.
 
+## Invocation
+
 Utils integrate into HTTP.sh through calling the main script, with the utility name as the first
 parameter. So, for `meow.sh` the invocation would be `./http.sh meow`, or `./http.sh meow [params]`
 if the util takes any parameters.
@@ -18,6 +20,27 @@ Of note:
 - the environment is equivalent to `./http.sh shell`
 
 A list of utilities can be obtained by calling `./http.sh utils`.
+
+## Creating your own
+
+Simply create a shell script in your namespace's util directory (that's usually `app/util/`), and
+mark it as executable. It has to have `.sh` as an extension, but shebang currently doesn't matter.
+
+It's recommended that if your util takes any positional parameters, it should check for $1 being
+set, and display a help message. An example of such script is listed below.
+
+```
+if [[ ! "$1" || "$1" == "help" ]]; then
+	echo "usage: $0 $HTTPSH_SCRIPTNAME <action>
+
+Action can be one of:
+  meow - Mrrrrrrrp!
+  help - This message."
+	exit 1
+fi
+
+# script continues here...
+```
 
 ## Built-in utils
 
