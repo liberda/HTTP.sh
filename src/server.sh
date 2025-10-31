@@ -112,11 +112,17 @@ if [[ -n "${headers["host"]}" ]]; then
     r[host]="${headers["host"]}"
     r[host_portless]="${headers["host"]%%:*}"
 
-    if [[ -f "config/$(basename -- ${r[host]})" ]]; then
-	    source "config/$(basename -- ${r[host]})"
-	elif [[ -f "config/$(basename -- ${r[host_portless]})" ]]; then
-		source "config/$(basename -- ${r[host_portless]})"
+	cfg_temp="config/$(basename -- ${r[host]})"
+
+	if [[ -f "$cfg_temp" ]]; then
+		source "$cfg_temp"
+	elif [[ "${r[host]}" != "${r[host_portless]}" ]]; then
+		cfg_temp_portless="config/$(basename -- ${r[host_portless]})"
+		[[ -f "$cfg_temp_portless" ]] && source "$cfg_temp_portless"
+		unset cfg_temp_portless
 	fi
+
+	unset cfg_temp
 fi
 
 if [[ "${headers["connection"]}" == *"upgrade"* && "${headers["upgrade"]}" == "websocket" ]]; then
