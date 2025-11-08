@@ -71,3 +71,37 @@ function url_decode() {
 function worker_add() {
 	:
 }
+
+# internal function
+# common GET/POST application/x-www-form-urlencoded parser
+#
+# _param_parse(input, destination_ref)
+_param_parse() {
+	[[ ! "$1" || ! "$2" ]] && return 1
+	local -n ref="$2"
+
+	local i name value
+	local -A array_refs
+	
+	while read -d'&' i; do
+		name="${i%%=*}"
+		if [[ "$name" ]]; then
+			value="${i#*=}"
+			if [[ "${ref["$name"]}" ]]; then # array mode
+				if [[ ! "${array_refs["$name"]}" ]]; then
+					array_refs["$name"]=_param_$RANDOM
+					local -n arr="${array_refs["$name"]}"
+
+					arr=("${ref["$name"]}")
+					ref["$name"]="${array_refs["$name"]}"
+				else
+					local -n arr="${array_refs["$name"]}"
+				fi
+				
+				arr+=("$(url_decode "$value")")
+			else
+				ref["$name"]="$(url_decode "$value")"
+			fi
+		fi
+	done <<< "$1"
+}

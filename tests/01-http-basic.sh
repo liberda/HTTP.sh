@@ -30,19 +30,20 @@ EOF
 	match="nyaa"
 }
 
-server_get_random() {
+server_get_array() {
 	prepare() {
 		cat <<"EOF" > app/webroot/meow.shs
 #!/bin/bash
-echo "${get_data[meow]}"
+declare -n ref="${get_data[meow]}"
+echo "${ref[1]}"
 EOF
 	}
 
 	tst() {
-		curl -s "localhost:1337/meow.shs?meow=nyaa"
+		curl -s "localhost:1337/meow.shs?meow=nyaa&meow=second+element&meow=meow"
 	}
 
-	match="nyaa"
+	match="second element"
 }
 
 server_post_param() {
@@ -58,6 +59,24 @@ EOF
 	}
 
 	match="nyaa"
+}
+
+server_post_array() {
+	prepare() {
+		cat <<"EOF" > app/webroot/meow.shs
+#!/bin/bash
+declare -n ref="${post_data[meow]}"
+declare -p "post_data" >&2
+declare -p "${post_data[meow]}" >&2
+echo "${ref[1]}"
+EOF
+	}
+
+	tst() {
+		curl -s "localhost:1337/meow.shs" -d 'meow=nyaa&meow=second+element&meow=meow'
+	}
+
+	match="second element"
 }
 
 server_patch_dummy() {
@@ -201,6 +220,9 @@ subtest_list=(
 	server_output
 	server_get_param
 	server_post_param
+
+	server_get_array
+	server_post_array
 
 	# currently functionally equivalent
 	server_patch_dummy

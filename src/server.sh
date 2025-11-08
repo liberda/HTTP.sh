@@ -44,16 +44,7 @@ if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS
 	r[url]="$(sed -E 's/^ *//;s/HTTP\/[0-9]+\.[0-9]+//;s/ //g;s/\/*\r//g;s/\/\/*/\//g' <<< "$param")"
 	unset IFS
 
-	if [[ "${r[url]}" == *'?'* ]]; then
-		while read -d'&' i; do
-			name="${i%%=*}"
-			if [[ "$name" ]]; then
-				value="${i#*=}"
-				get_data[$name]="$(url_decode "$value")"
-			fi
-		done <<< "${r[url]#*\?}&"
-	fi
-
+	_param_parse "${r[url]#*\?}&" get_data
 else
 	exit 1 # TODO: throw 400 here
 fi
@@ -272,12 +263,7 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 
 		if [[ "${r[payload_type]}" == "urlencoded" ]]; then
 			unset IFS
-			while read -r -d'&' i; do
-				name="${i%%=*}"
-				value="${i#*=}"
-				post_data[$name]="$(url_decode "$value")"
-				echo post_data[$name]="$value" >/dev/stderr
-			done <<< "${data}&"
+			_param_parse "${data}&" post_data
 		else
 			# this is fine?
 			post_data[0]="${data%\&}"
