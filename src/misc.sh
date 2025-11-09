@@ -111,7 +111,18 @@ _param_parse() {
 # http_array(name, out_ref)
 http_array() {
 	[[ ! "$1" || ! "$2" ]] && return 1
-	[[ ! "${http_array_refs[$1]}" ]] && return 1
+	if [[ ! "${http_array_refs[$1]}" ]]; then
+		declare -ga $2
+		local -n ref=$2
 
-	declare -gn $2=${http_array_refs[$1]}
+		if [[ "${post_data[$1]}" ]]; then
+			ref=("${post_data[$1]}")
+		elif [[ "${get_data[$1]}" ]]; then
+			ref=("${get_data[$1]}")
+		else
+			return 1
+		fi
+	else
+		declare -gn $2=${http_array_refs[$1]}
+	fi
 }
