@@ -34,7 +34,7 @@ server_get_array() {
 	prepare() {
 		cat <<"EOF" > app/webroot/meow.shs
 #!/bin/bash
-declare -n ref="${get_data[meow]}"
+http_array meow ref
 echo "${ref[1]}"
 EOF
 	}
@@ -44,6 +44,12 @@ EOF
 	}
 
 	match="second element"
+}
+
+server_post_array() {
+	tst() {
+		curl -s "localhost:1337/meow.shs" -d 'meow=nyaa&meow=second+element&meow=meow'
+	}
 }
 
 server_post_param() {
@@ -59,24 +65,6 @@ EOF
 	}
 
 	match="nyaa"
-}
-
-server_post_array() {
-	prepare() {
-		cat <<"EOF" > app/webroot/meow.shs
-#!/bin/bash
-declare -n ref="${post_data[meow]}"
-declare -p "post_data" >&2
-declare -p "${post_data[meow]}" >&2
-echo "${ref[1]}"
-EOF
-	}
-
-	tst() {
-		curl -s "localhost:1337/meow.shs" -d 'meow=nyaa&meow=second+element&meow=meow'
-	}
-
-	match="second element"
 }
 
 server_patch_dummy() {

@@ -81,21 +81,20 @@ _param_parse() {
 	local -n ref="$2"
 
 	local i name value
-	local -A array_refs
 	
 	while read -d'&' i; do
 		name="${i%%=*}"
 		if [[ "$name" ]]; then
 			value="${i#*=}"
 			if [[ "${ref["$name"]}" ]]; then # array mode
-				if [[ ! "${array_refs["$name"]}" ]]; then
-					array_refs["$name"]=_param_$RANDOM
-					local -n arr="${array_refs["$name"]}"
+				if [[ ! "${http_array_refs["$name"]}" ]]; then
+					http_array_refs["$name"]=_param_$RANDOM
+					local -n arr="${http_array_refs["$name"]}"
 
 					arr=("${ref["$name"]}")
-					ref["$name"]="${array_refs["$name"]}"
+					ref["$name"]="[array]"
 				else
-					local -n arr="${array_refs["$name"]}"
+					local -n arr="${http_array_refs["$name"]}"
 				fi
 				
 				arr+=("$(url_decode "$value")")
@@ -104,4 +103,15 @@ _param_parse() {
 			fi
 		fi
 	done <<< "$1"
+}
+
+
+# Safely receive a reference to a HTTP urlencoded array
+#
+# http_array(name, out_ref)
+http_array() {
+	[[ ! "$1" || ! "$2" ]] && return 1
+	[[ ! "${http_array_refs[$1]}" ]] && return 1
+
+	declare -gn $2=${http_array_refs[$1]}
 }

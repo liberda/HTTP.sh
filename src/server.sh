@@ -23,6 +23,7 @@ declare -A cookies # cookies!
 declare -A get_data # all GET params
 declare -A post_data # all POST params
 declare -A params # parsed router data
+declare -A http_array_refs # references to GET/POST arrays
 
 r[status]=210 # Mommy always said that I was special
 r[req_headers]=''
