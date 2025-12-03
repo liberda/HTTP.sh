@@ -27,6 +27,12 @@ A sample `profile.shs` could look like this:
 echo "$(html_encode "${params[username]}")'s profile"
 ```
 
+Router accepts regex, so for example if you want to redirect all traffic to root, you can just do:
+
+```
+router "/.*" "${cfg[namespace]}/webroot/index.shs"
+```
+
 ## Limitations
 
 - The param name can only contain the following characters: `[A-Za-z0-9]`
