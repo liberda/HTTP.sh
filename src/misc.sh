@@ -103,6 +103,8 @@ _param_parse() {
 			fi
 		fi
 	done <<< "$1"
+
+	ref="$(url_decode "${1%%&}")" # fallback for accessing raw data
 }
 
 

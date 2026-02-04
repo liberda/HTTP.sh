@@ -46,6 +46,21 @@ EOF
 	match="second element"
 }
 
+server_get_arbitrary() {
+	prepare() {
+		cat <<"EOF" > app/webroot/meow.shs
+#!/bin/bash
+echo "$get_data"
+EOF
+	}
+
+	tst() {
+		curl -s "localhost:1337/meow.shs?a+quick+brown+fox%20jumped+over+a+lazy+dog"
+	}
+
+	match="a quick brown fox jumped over a lazy dog"
+}
+
 server_post_array() {
 	tst() {
 		curl -s "localhost:1337/meow.shs" -d 'meow=nyaa&meow=second+element&meow=meow'
@@ -65,6 +80,21 @@ EOF
 	}
 
 	match="nyaa"
+}
+
+server_post_arbitrary() {
+	prepare() {
+		cat <<"EOF" > app/webroot/meow.shs
+#!/bin/bash
+echo "$post_data"
+EOF
+	}
+
+	tst() {
+		curl -s "localhost:1337/meow.shs" -d 'meow'
+	}
+
+	match="meow"
 }
 
 server_patch_dummy() {
@@ -211,6 +241,9 @@ subtest_list=(
 
 	server_get_array
 	server_post_array
+
+	server_get_arbitrary
+	server_post_arbitrary
 
 	# currently functionally equivalent
 	server_patch_dummy
