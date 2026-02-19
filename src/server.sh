@@ -72,7 +72,7 @@ unset IFS
 
 # TODO: remove deprecated fields below
 
-r[content_length]="${headers["content-length"]}"
+r[content_length]="${headers["content-length"]//[^0-9]}"
 r[user_agent]="${headers["user-agent"]}"
 r[websocket_key]="${headers["sec-websocket-key"]}"
 r[req_headers]="$headers"
@@ -251,7 +251,15 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 		fi
 	else
 		if [[ "${r[content_length]}" ]]; then
-			read -r -N "${r[content_length]}" data
+			# originally, this used `read -r -N "${r[content_length]}" data`
+			# we are no longer doing that, because Content-Length is bytes, and read is chars.
+			#
+			# bs=1 is suboptimal, but setting it to an untrusted value may have adverse
+			# consequences. in most cases it's fine because we're behind a reverse proxy, but
+			# i don't want to rely on that for security.
+			#
+			# at some point, we should refactor this to use a larger (but safe) blocksize
+			data="$(dd count="${r[content_length]}" bs=1)"
 		else
 			if read -t0; then
 				data=
