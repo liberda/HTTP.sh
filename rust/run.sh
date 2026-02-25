@@ -1,6 +1,6 @@
 #!/bin/bash
-enable -f $(dirname $0)/target/debug/libhttpsh.so -n array
+enable -f $(dirname $0)/target/debug/libhttpsh.so -n array_
 declare -A str
 str[title]='nyaa!'
-array $1
+array_ $1
 

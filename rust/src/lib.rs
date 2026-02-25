@@ -1,5 +1,4 @@
-use rusht::bash;
-use rusht::builtin;
+use ruszt::{bash, builtin, variable};
 use std::ffi::CStr;
 use std::fs::File;
 use std::io::Read;
@@ -7,10 +6,10 @@ use std::str;
 use std::collections::HashMap;
 
 #[builtin]
-unsafe fn array(args: Vec<&CStr>) {
-	let meow = rusht::get_assoc_raw(c"str").unwrap();
+fn array_(args: Vec<&CStr>) -> i32 {
+	let meow = ruszt::get_assoc_raw(c"str").unwrap();
 	let hash = (*meow).value as *mut bash::HASH_TABLE;
-	let map = rusht::assoc::new_hashmap_idk_what_im_doing(hash);
+	let map = ruszt::assoc::new_hashmap_idk_what_im_doing(hash);
 
 	// for i in {0..(*hash).nbuckets} {
 	// 	let item = *(*hash).bucket_array.wrapping_add(i as usize);
@@ -137,7 +136,7 @@ unsafe fn array(args: Vec<&CStr>) {
 			}
 		}
 	}
-    ()
+	bash::EXIT_SUCCESS.cast_signed()
 }
 
 fn unpackTagName(mut iter: std::iter::Peekable<std::str::Chars>) -> String {
