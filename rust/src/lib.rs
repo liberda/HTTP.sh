@@ -1,4 +1,7 @@
-use ruszt::{bash, builtin, variable};
+#![allow(while_true)] // shut the fuck up
+#![allow(unused_imports)] // didn't ask???
+
+use ruszt::{bash, builtin, variable, assoc::Assoc};
 use std::ffi::CStr;
 use std::fs::File;
 use std::io::Read;
@@ -6,10 +9,11 @@ use std::str;
 use std::collections::HashMap;
 
 #[builtin]
-fn array_(args: Vec<&CStr>) -> i32 {
-	let meow = ruszt::get_assoc_raw(c"str").unwrap();
-	let hash = (*meow).value as *mut bash::HASH_TABLE;
-	let map = ruszt::assoc::new_hashmap_idk_what_im_doing(hash);
+fn array(args: Vec<&CStr>) -> i32 {
+	// let meow = ruszt::get_assoc(c"str").unwrap();
+	// let hash = (*meow).value as *mut bash::HASH_TABLE;
+	// let map = ruszt::assoc::new_hashmap_idk_what_im_doing(hash);
+	let map = Assoc::from_var_name("str").unwrap();
 
 	// for i in {0..(*hash).nbuckets} {
 	// 	let item = *(*hash).bucket_array.wrapping_add(i as usize);
@@ -102,24 +106,30 @@ fn array_(args: Vec<&CStr>) -> i32 {
 							}
 						}
 					}
+
 					// line.push_str(&parseTag(tag, &map));
 					match tag.chars().nth(0).unwrap() {
 						'.' => {
 							// TODO: html_encode this
-							let res = map.get(&tag[1..].to_string());
-							if res.is_some() {
-								line.push_str(res.unwrap());
-							} else {
-								line.push_str(&tag);
-							}
+							// let tag_ = String::from(tag);
+							let res = map.get(&tag[1..]).unwrap().unwrap();
+							// let tag_ = String::from(tag);
+							// let res = map.get(&tag[1..].into());
+							// let res = map.get(&"a");
+							// if res.is_some() {
+							// 	line.push_str(res.unwrap());
+							// } else {
+							line.push_str(&res.to_string_lossy().to_string());
+							// }
 						},
 						'@' => {
-							let res = map.get(&tag[1..].to_string());
-							if res.is_some() {
-								line.push_str(res.unwrap());
-							} else {
-								line.push_str(&tag);
-							}
+							let res = map.get(&tag[1..]).unwrap().unwrap();
+							// if res.is_some() {
+							// 	line.push_str(res.unwrap());
+							// } else {
+							// line.push_str(res.to_string_lossy().into_owned().as_ref());
+							// }
+							line.push_str(&res.to_string_lossy().to_string());
 						}
 						_ => {
 							println!("???")
