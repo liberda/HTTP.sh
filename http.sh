@@ -22,6 +22,8 @@ elif [[ ! -f "$PWD/http.sh" ]]; then
 	echo -e "Could not detect HTTP.sh directory\nPlease run HTTP.sh inside its designated directory"
 	exit 1
 fi
+
+source src/lib.sh
 source src/version.sh
 
 if [[ "$1" == "init" ]]; then # will get replaced with proper parameter parsing in 1.0
@@ -102,6 +104,7 @@ if [[ "$1" == 'shell' ]]; then
 	source src/misc.sh
 	source src/notORM.sh
 	source src/template.sh
+	source src/migrate.sh
 	source "${cfg[namespace]}/config.sh"
 	PS1="[HTTP.sh] \[\033[01;34m\]\w\[\033[00m\]\$ "')
 	exit 0
@@ -153,12 +156,18 @@ elif [[ "$1" == "debuggier" ]]; then
     set -x
 fi
 
+source src/notORM.sh
+source src/migrate.sh
 source src/worker.sh
 
 if [[ -f "${cfg[namespace]}/config.sh" ]]; then
 	run_once=true
 	source "${cfg[namespace]}/config.sh"
 	unset run_once
+fi
+
+if [[ "$HTTPSH_RUN_MIGRATIONS" != "false" ]]; then
+	migrate_check
 fi
 
 if [[ "${cfg[ip]}" == *":"* ]]; then

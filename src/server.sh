@@ -6,6 +6,8 @@ if [[ "$1" == true ]]; then
 fi
 shopt -s extglob
 
+# TODO: maybe we should begin baking this on startup?
+#       benchmark startup speed with and without this chain
 source src/version.sh
 source config/master.sh
 source src/mime.sh
