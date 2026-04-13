@@ -39,7 +39,7 @@ if [[ "$1" == "init" ]]; then # will get replaced with proper parameter parsing 
 	fi
 	source config/master.sh
 	
-	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates" "${cfg[namespace]}/util/"
+	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates" "${cfg[namespace]}/util/" "${cfg[namespace]}/migrations"
 	touch "${cfg[namespace]}/config.sh" "${cfg[namespace]}/workers/example/control"
 	cp ".resources/config.sh" "${cfg[namespace]}/config.sh"
 	cp ".resources/routes.sh" "${cfg[namespace]}/routes.sh"
@@ -104,6 +104,7 @@ if [[ "$1" == 'shell' ]]; then
 	source src/misc.sh
 	source src/notORM.sh
 	source src/template.sh
+	source src/lib.sh
 	source src/migrate.sh
 	source "${cfg[namespace]}/config.sh"
 	PS1="[HTTP.sh] \[\033[01;34m\]\w\[\033[00m\]\$ "')
