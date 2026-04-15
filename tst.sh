@@ -158,6 +158,10 @@ done
 
 _final_cleanup
 
-echo -e "\n\nTesting done!
+echo -e "\nTesting done!
 OK:   $ok_count
 FAIL: $fail_count"
+
+if [[ "$fail_count" -gt 0 ]]; then
+    exit 1
+fi
