@@ -219,6 +219,22 @@ notORM_mapping_iter() {
 	}
 }
 
+notORM_mapping_add() {
+	tst() {
+		declare -A items
+		items[id]=1
+		items[name]="spezi"
+		items[occupation]="mmmmm... lecker"
+
+		data_add storage/asdf.dat items || return $?
+		
+		declare -A out
+		data_get storage/asdf.dat { spezi name } out
+
+		[[ "${out[occupation]}" == *"lecker" ]] || return 1
+	}
+}
+
 subtest_list=(
 	notORM_add_get
 	notORM_get_multiline
@@ -238,4 +254,5 @@ subtest_list=(
 	notORM_mapping_always
 	notORM_mapping_missing
 	notORM_mapping_iter
+	notORM_mapping_add
 )

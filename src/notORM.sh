@@ -107,8 +107,9 @@ _data_gen_expr() {
 #
 # data_add(store, array, [numbered])
 data_add() {
-	[[ ! -v "$2" ]] && return 1
 	local -n ref="$2"
+	[[ "${#ref[@]}" -gt 0 ]] || return 1
+	local store="$1"
 	local res=
 	local IFS=$'\n'
 
@@ -127,13 +128,33 @@ data_add() {
 		res+="$id$delim"
 	fi
 
-	local i
-	for i in "${ref[@]}"; do
-		_trim_control "$i"
-		res+="$tr$delim"
-	done
+	if [[ "${ref@a}" == A ]]; then
+		local tmp=()
+		for i in "${!ref[@]}"; do
+			if [[ "$i" =~ ^[0-9]*$ ]]; then
+				tmp[$i]="${ref[$i]}"
+			elif [[ "${_notORM_map["$store,$i"]}" ]]; then
+				tmp["${_notORM_map["$store,$i"]}"]="${ref[$i]}"
+			else
+				log_dbg "notORM: Oops! No mapping found for element $i on data_add operation for $store. Dropping element."
+			fi
+		done
 
-	echo "$res" >> "$1" # TODO: some locking
+		for (( i=0; i<${#ref[@]}; i++ )); do
+			# this style of for ensures that if we have missing elems,
+			# they will get written as empty (avoiding mangling the columns)
+			_trim_control "${tmp[i]}"
+			res+="$tr$delim"
+		done
+	else
+		local i
+		for i in "${ref[@]}"; do
+			_trim_control "$i"
+			res+="$tr$delim"
+		done
+	fi
+
+	echo "$res" >> "$store" # TODO: some locking
 }
 
 # get one entry from store, filtering by search. exit after first result.
