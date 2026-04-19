@@ -26,7 +26,6 @@ migrate_test_basic() {
 	}
 
 	tst() {
-		set -x
 		[[ "$(cat "$store.cols")" != 2 ]] && return 1
 		cat <<"EOF" > "$migration"
 cb() {
