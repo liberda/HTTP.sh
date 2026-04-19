@@ -215,12 +215,14 @@ data_get() {
 
 # run `callback` on all entries from `store` that match `search`.
 # by default uses the 0th column. override with optional `column`
+# setting `assoc` to true enables new behavior, where `$adata` will
+# be an associative array with keys defined from data_mapping.
 #
 # immediately exits with 255 if the callback function returned 255
 # if there were no matches, returns 2
 # if the store wasn't found, returns 4
 #
-# data_iter(store, { search, [column] }, ... callback) -> $data
+# data_iter(store, { search, [column] }, ... callback, [assoc]) -> $data, [$adata]
 # data_iter(store, search, callback, [column]) -> $data
 data_iter() {
 	[[ ! "$3" ]] && return 1
@@ -232,10 +234,12 @@ data_iter() {
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
 		local callback="$1"
+		local assoc="$2"
 	else # compat
 		local callback="$3"
 		local search=("$2")
 		local column=("${4:-0}")
+		local assoc=false
 	fi
 
 	while read -r line; do
@@ -251,6 +255,14 @@ data_iter() {
 				continue 2
 			fi
 		done
+		if [[ "$assoc" == true ]]; then # populate the names!
+			declare -A adata
+			for i in ${!data[@]}; do
+				if [[ "${_notORM_revmap["$store,$i"]}" ]]; then
+					adata["${_notORM_revmap["$store,$i"]}"]="${data[i]}"
+				fi
+			done
+		fi
 		"$callback" # only reached if an entry matched all constraints
 		[[ $? == 255 ]] && return 255
 		_r=0

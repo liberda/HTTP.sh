@@ -208,6 +208,17 @@ notORM_mapping_missing() {
 	}
 }
 
+notORM_mapping_iter() {
+	tst() {
+		cb() {
+			[[ "${adata[occupation]}" == nyaa ]] &&	success=true
+		}
+		data_iter storage/asdf.dat { meow name } cb true
+
+		[[ "$success" == true ]] || return 1
+	}
+}
+
 subtest_list=(
 	notORM_add_get
 	notORM_get_multiline
@@ -226,4 +237,5 @@ subtest_list=(
 	notORM_mapping_retrieve_revmap
 	notORM_mapping_always
 	notORM_mapping_missing
+	notORM_mapping_iter
 )

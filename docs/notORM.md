@@ -90,13 +90,17 @@ declare -p res # res=(0 123 456)
 ## Iterators
 
 ```
-data_iter STORE_PATH { ... } CALLBACK
+data_iter STORE_PATH { ... } CALLBACK [ASSOC]
 ```
 
 `CALLBACK` is the name of an user-defined function that will get called on every matched
 entry. Common debug value is `x`, which will run `declare -p data`, listing all records.
 
-Returning value `255` from the callback will terminate the iterator.
+`ASSOC` is an optional parameter which controls if the additional `$adata` associative
+array should be populated. There's a slight performance penalty due to an additional
+copy (my tests were 10-12ms with, and 6-8ms without. YMMV.)
+
+Returning value `255` from the callback will terminate the iterator immediately.
 
 ### Example usage
 
