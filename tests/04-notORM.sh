@@ -144,8 +144,9 @@ notORM_mapping() {
 		return 0
 	}
 	cleanup() {
-		unset _notORM_map
+		unset _notORM_map _notORM_revmap
 		declare -gA _notORM_map
+		declare -gA _notORM_revmap
 	}
 }
 
@@ -155,17 +156,55 @@ notORM_mapping_duplicate() {
 	}
 }
 
+# try to match a column by name
 notORM_mapping_retrieve() {
-	tst() {
+	prepare() {
 		data_mapping storage/asdf.dat id name occupation
 		a=(0 meow nyaa)
 		data_add storage/asdf.dat a
+	}
 
+	tst() {
 		data_get storage/asdf.dat { meow name }
 	}
 
 	cleanup() {
-		rm storage/asdf.dat
+		:
+	}
+}
+
+# match a column by name, and check if output got expanded
+# uses the data from above
+notORM_mapping_retrieve_revmap() {
+	tst() {
+		declare -gA res
+		data_get storage/asdf.dat { meow name }
+
+		[[ "${res[occupation]}" == "nyaa" ]] || return 1
+	}
+}
+
+# check if cfg[notORM_always_asssoc] works
+notORM_mapping_always() {
+	tst() {
+		cfg[notORM_always_asssoc]=true
+		data_get storage/asdf.dat { meow name } assoc_test
+
+		[[ "${assoc_test[occupation]}" == "nyaa" ]] || return 1
+	}
+}
+
+# test the fallback in case of a missing map
+notORM_mapping_missing() {
+	tst() {
+		unset _notORM_revmap _notORM_map
+		declare -gA _notORM_revmap
+		declare -gA _notORM_map
+		
+		declare -gA res
+		data_get storage/asdf.dat { meow 1 }
+
+		[[ "${res[2]}" == nyaa ]] || return 1
 	}
 }
 
@@ -184,4 +223,7 @@ subtest_list=(
 	notORM_mapping
 	notORM_mapping_duplicate
 	notORM_mapping_retrieve
+	notORM_mapping_retrieve_revmap
+	notORM_mapping_always
+	notORM_mapping_missing
 )

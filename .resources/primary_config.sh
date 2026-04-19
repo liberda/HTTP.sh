@@ -47,4 +47,8 @@ cfg[register_should_login]=true
 
 cfg[websocket_enable]=false
 
+# should notORM always try to retrieve records to an associative array?
+# disabled by default for legacy compat
+cfg[notORM_always_assoc]=false
+
 cfg[template_date_format]='%Y-%m-%d %H:%M:%S'

@@ -162,6 +162,25 @@ data_get() {
 		local -n ref=${4:-res}
 	fi
 
+	if [[ "${cfg[notORM_always_assoc]}" == true ]]; then
+		local ref_type=A # forcing it for later
+		unset ${!ref} # to prevent bash complaining about implicit array->assoc conversion
+		declare -gA ${!ref}
+	else
+		local ref_type=${ref@a}
+	fi
+	
+	if [[ "$ref_type" == A ]]; then
+		# we are gonna fake a few things:
+		# - 'ref' becomes a new, temporary array
+		# - 'ref_orig' now points to the *actual* assoc
+		# we need this switcheroo because otherwise we'll have
+		# a lot of dupe code, OR we need to copy stuff twice
+		local -n ref_orig=${!ref}
+		local +n ref
+		ref=()
+	fi
+
 	local line
 	while read -r line; do
 		IFS=$delim
@@ -173,10 +192,20 @@ data_get() {
 		ref=($x)
 		local i
 		for (( i=0; i<${#search[@]}; i++ )); do
-			if [[ "${ref[column[i]]}" != "${search[i]}" && "${search[i]}" ]]; then
+			if [[ "${ref[${column[i]}]}" != "${search[i]}" && "${search[i]}" ]]; then
 				continue 2
 			fi
 		done
+		if [[ "$ref_type" == A ]]; then # populate the names!
+			for i in ${!ref[@]}; do
+				if [[ "${_notORM_revmap["$store,$i"]}" ]]; then
+					ref_orig["${_notORM_revmap["$store,$i"]}"]="${ref[i]}"
+				else
+					# if we don't have a name, just use the id
+					ref_orig[$i]="${ref[$i]}"
+				fi
+			done
+		fi
 		return 0 # only reached if an entry matched all constraints
 	done < "$store"
 
