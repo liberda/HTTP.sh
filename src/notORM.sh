@@ -23,6 +23,8 @@
 delim=$'\01'
 newline=$'\02'
 ctrl=$'\03'
+declare -gA _notORM_map
+declare -gA _notORM_revmap
 
 # TODO: proper locking
 # TODO: matching more than one column 
@@ -44,17 +46,23 @@ alias _data_parse_pairs='
 		[[ "$1" != "{" ]] && break # yes, we need to match this twice
 		if [[ "$2" != "}" || "$3" == "}" || "$4" == "}" ]]; then # make sure we dont want to match the bracket
 			search+=("$2")
-		else # empty search - just match ANY record
+		else # args: "{ }" - just match ANY record
 			search+=("")
 			column+=(0)
 			shift 2
 			break
 		fi
-		if [[ "$3" != "}" ]]; then
-			column+=("$3")
+		if [[ "$3" != "}" ]]; then # args: "{ search column }"
+			if [[ "${_notORM_map["$store,$3"]}" ]]; then
+				# resolve column mapping
+				column+=("${_notORM_map["$store,$3"]}")
+			else
+				# just pass on parameter, assuming a number
+				column+=("$3")
+			fi
 			[[ "$4" != "}" ]] && return 1 # we accept only values in pairs
 			shift 3
-		else
+		else # args: "{ search }" (implicit column)
 			column+=(0)
 			shift 2
 			if [[ "$2" != "{" ]]; then
@@ -147,7 +155,7 @@ data_get() {
 
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
-		local -n ref="${1:-res}"
+		local -n ref="${1:-res}" # after _data_parse_pairs, this checks *last* elem
 	else # compat
 		local search=("$2")
 		local column=("${3:-0}")
@@ -315,6 +323,25 @@ data_yeet() {
 	fi
 
 	sed -i "$expr" "$store"
+}
+
+# Creates a mapping between column number and a column name.
+# To be called from config.sh or somewhere else at the start.
+#
+# returns 0 on success and 1 on duplicate columns.
+#
+# data_mapping(store, column, column...)
+data_mapping() {
+	local store="$1"
+
+	n=0
+	while shift; do
+		[[ ! "$1" ]] && break
+		[[ "${_notORM_map["$store,$1"]}" ]] && return 1
+		declare -g _notORM_map["$store,$1"]="$n"
+		declare -g _notORM_revmap["$store,$n"]="$1"
+		(( n++ ))
+	done
 }
 
 _sed_sanitize() {

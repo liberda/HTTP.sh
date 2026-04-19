@@ -134,6 +134,41 @@ notORM_add_autoincrement() {
 	}
 }
 
+notORM_mapping() {
+	tst() {
+		data_mapping aoeu.dat id name whatever
+
+		[[ "${_notORM_map[aoeu.dat,id]}" != 0 ]] && return 1
+		[[ "${_notORM_map[aoeu.dat,name]}" != 1 ]] && return 1
+		[[ "${_notORM_map[aoeu.dat,whatever]}" != 2 ]] && return 1
+		return 0
+	}
+	cleanup() {
+		unset _notORM_map
+		declare -gA _notORM_map
+	}
+}
+
+notORM_mapping_duplicate() {
+	tst() {
+		! data_mapping asdf.dat meow meow
+	}
+}
+
+notORM_mapping_retrieve() {
+	tst() {
+		data_mapping storage/asdf.dat id name occupation
+		a=(0 meow nyaa)
+		data_add storage/asdf.dat a
+
+		data_get storage/asdf.dat { meow name }
+	}
+
+	cleanup() {
+		rm storage/asdf.dat
+	}
+}
+
 subtest_list=(
 	notORM_add_get
 	notORM_get_multiline
@@ -145,4 +180,8 @@ subtest_list=(
 	notORM_replace_oldsyntax
 	notORM_backslashes
 	notORM_add_autoincrement
+
+	notORM_mapping
+	notORM_mapping_duplicate
+	notORM_mapping_retrieve
 )
