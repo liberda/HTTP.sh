@@ -24,6 +24,7 @@ The API is still evolving. Functions marked in italics are to be deprecated:
 - *data_replace_value* (replaces one cell on all rows that match)
 - data_replace (replaces a row with a bash array on all rows that match)
 - data_yeet (removes all rows that match)
+- data_mapping (defines the name -> column number map)
 
 For in-depth descriptions, see references in `src/notORM.sh`. Each function has some usage
 notes in a comment above it.
@@ -49,7 +50,9 @@ COMMAND STORE_PATH { SEARCH COLUMN } { SEARCH COLUMN } (...) [additional_args]
 - `SEARCH` is a literal that has to match when selecting a row. Optional, left out matches
   all possible rows.
 - `COLUMN` specifies which column the `SEARCH` term should be matched on. 0-indexed,
-  optional, defaults to 0 (usually unique key or autoincrement ID)
+  optional, defaults to 0 (usually unique key or autoincrement ID). If column names are
+  defined with `data_mapping` (described further in this document), `COLUMN` can be also one
+  of those. 
 - `}` is a literal closing curly brace. it may be followed by another `{`, or
   command-specific arguments.
 
@@ -106,3 +109,35 @@ data_iter store { } cb
 
 Depending on your coding style, calling `unset` on the function after use may be desired.
 
+## Named fields
+
+New feature in v0.97.6; notORM calls can now be made with field names instead of numbers!
+
+First, in config.sh (or somewhere common), describe your objects:
+
+```
+#   store name    |  column names
+#            \    |  /  |  \
+#             V   | V   V   V
+data_mapping store id name description
+```
+
+This will create a virtual two-way mapping:
+- All notORM functions can filter by column name instead of column ID
+- Some notORM functions also support unpacking the data into a nice, named associative array
+
+```
+data_get store { meow name }      # equivalent to `data_get store { meow 1 }`
+
+declare -A asdf                   # declare the assoc array for the reverse mapping
+data_get store { meow name } asdf # just pass it like normal
+declare -p asdf 
+# declare -A asdf=([id]="0" [name]="dmi" [description]="whatever" )
+```
+
+Mapping to associative arrays comes at a slight performance penalty; For legacy reasons, you *need*
+to define the assoc array beforehand or set the new `cfg[notORM_always_assoc]`, which will do it
+for you. Without either of those two set up, notORM will still provide a normal numbered array.
+
+If an assoc array is requested, but the mapping is not available, notORM will return an assoc
+array with numbers instead of labels; same is true for incomplete mappings (too few elements).
