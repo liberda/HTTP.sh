@@ -145,3 +145,16 @@ for you. Without either of those two set up, notORM will still provide a normal 
 
 If an assoc array is requested, but the mapping is not available, notORM will return an assoc
 array with numbers instead of labels; same is true for incomplete mappings (too few elements).
+
+### Function support
+
+Named fields are currently supported in the following API functions:
+
+| API call       | Support | Remarks |
+| -----------    | ------- | ------- |
+| `data_add`     | ✅      | pass a well-formed assoc array, it will get unpacked automagically |
+| `data_get`     | ✅      | full filter support, unpacking into assoc array on request |
+| `data_iter`    | ✅      | full filter support, unpacking into separate assoc array on request |
+| `data_yeet`    | ✅      | full filter support |
+| `data_replace` | ❌      | should refactor those sometime |
+| `data_replace_value` | ❌| |
