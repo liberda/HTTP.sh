@@ -30,27 +30,21 @@ if [[ ${r[status]} == 212 ]]; then
 	if [[ "${cfg[unbuffered]}" == true ]]; then
 		source "${r[view]}"
 	else
-		temp=$(mktemp)
-		source "${r[view]}" > $temp
-		__headers false
-        get_mime "$temp"
-        # Defaults to text/plain for things it doesn't know, eg. CSS
-        [[ "$mimetype" != 'text/plain' ]] && echo -ne "content-type: $mimetype\r\n"
-        echo -ne "\r\n"
-		cat $temp
-		rm $temp
+		# open a dummy fd to keep our data in
+		exec 253<> >(tail -c 2047m)
+		source "${r[view]}" >&253
+		__headers
+		exec 253<&- # flush the data out
+		wait # wait for the transfer to finish
+
 	fi
 
 elif [[ "${r[uri]}" =~ \.${cfg[extension]}$ ]]; then
-	temp=$(mktemp)
-	source "${r[uri]}" > $temp
+	exec 253<> >(tail -c 2047m)
+	source "${r[uri]}" >&253
 	__headers
-	if [[ "${cfg[encoding]}" ]]; then
-		iconv $temp -f UTF-8 -t "${cfg[encoding]}"
-	else
-		cat $temp
-	fi
-	rm $temp
+	exec 253<&-
+	wait
 
 else
 	__headers
