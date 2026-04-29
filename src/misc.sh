@@ -21,6 +21,7 @@ function remove_cookie() {
 
 # header(header, header...)
 function header() {
+	local i
 	for i in "$@"; do
 		r[headers]+="$i\r\n"
 	done
@@ -28,6 +29,7 @@ function header() {
 
 # get_dump()
 function get_dump() {
+	local i
 	for i in "${!get_data[@]}"; do
 		echo "${i}=${get_data[$i]}"
 	done
@@ -35,6 +37,7 @@ function get_dump() {
 
 # post_dump()
 function post_dump() {
+	local i
 	for i in "${!post_data[@]}"; do
 			echo "${i}=${post_data[$i]}"
 	done
