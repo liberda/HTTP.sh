@@ -51,10 +51,21 @@ function render() {
 	fi
 
 	# process special set statements
+	# TODO: would be cool if those could be in-order,
+	# to make tpl reuse easier and cleaner...
 	if [[ "$garbage" == *'{{-set-'* ]]; then
 		while read key; do
 			ref["?$key"]=_
+			buf+="s${_tpl_ctrl}\{\{-set-$key\}\}${_tpl_ctrl}${_tpl_ctrl}"
 		done <<< "$(grep -Poh '{{-set-\K(.*?)(?=}})' <<< "$garbage" | sed 's/[^a-z0-9_-]//g')"
+	fi
+	
+	if [[ "$garbage" == *'{{-unset-'* ]]; then
+		while read key; do
+			unset ref["?$key"]
+			buf+="s${_tpl_ctrl}\{\{-unset-$key\}\}${_tpl_ctrl}${_tpl_ctrl}"
+
+		done <<< "$(grep -Poh '{{-unset-\K(.*?)(?=}})' <<< "$garbage" | sed 's/[^a-z0-9_-]//g')"
 	fi
 
 	local key

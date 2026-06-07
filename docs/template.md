@@ -192,3 +192,14 @@ poorly-written relative URLs.
 If `{{-set-<name>}}` exists anywhere within your processed template (including the included templates),
 `array[?<name>]` will get set internally. This can be used to conditionally enable parts of another template
 based on what other templates are loaded.
+
+## Unset statement
+
+| | |
+| --- | --- |
+| In the template | `{{-unset-<name>}}` |
+| In the code | n/a |
+| Notes | Literal reverse of the above |
+
+Equivalent to `unset array[?<name>]`. Since a set variable is "true" and unset
+is "false", this just ensures a property is false.
