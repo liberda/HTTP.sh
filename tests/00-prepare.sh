@@ -7,7 +7,7 @@ prepare() {
 
 tst() {
 	for i in {1..10}; do
-		if [[ "$(netstat -tulnap | grep LISTEN | grep 1337)" ]]; then
+		if curl -s http://localhost:1337; then
 			return 0
 		fi
 		sleep 0.5
