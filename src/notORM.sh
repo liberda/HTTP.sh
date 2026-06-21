@@ -311,7 +311,7 @@ data_replace_value() {
 		local expr="s$ctrl^\($(repeat $column "[^${delim}]*${delim}")\)$(_sed_sanitize "$2")\($delim$(repeat $(( $(cat "${1}.cols") - column - 1 )) "[^${delim}]*${delim}")\)"'$'"$ctrl\1$(_sed_sanitize "$3")\2$ctrl"
 	fi
 
-	sed -i "$expr" "$1"
+	sed_i "$expr" "$1"
 }
 
 # replace an entire entry in `store` with `array`, filtering by `search`.
@@ -354,7 +354,7 @@ data_replace() {
 	done
 
 	expr+="$(_sed_sanitize_array "$output")$ctrl"
-	sed -i "$expr" "$store"
+	sed_i "$expr" "$store"
 }
 
 # deletes entries from the `store` using `search`.
@@ -384,7 +384,7 @@ data_yeet() {
 		fi
 	fi
 
-	sed -i "$expr" "$store"
+	sed_i "$expr" "$store"
 }
 
 # Creates a mapping between column number and a column name.

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # misc.sh - miscellaneous functions
 
+# Shorthand for only sed in-place syntax that works with GNU sed AND FreeBSD sed
+alias sed_i='sed -i=""'
+
 # set_cookie(cookie_name, cookie_content)
 function set_cookie() {
 	r[headers]+="Set-Cookie: $1=$2; Path=${cfg[cookie_path]}\r\n"
