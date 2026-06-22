@@ -58,7 +58,7 @@ a file substitution, such as `<(echo ...)`.
 | --- | --- |
 | In the template | `{{.<name>}}` |
 | In the code | `array[<name>]="<value>"` |
-| Notes | For your convenience, code representation skips the dot. |
+| Notes | Special case: for brevity, code representation always skips the dot. Other types do NOT do that. |
 
 **Important**: to simplify your life (and protect your application), simple replaces ALWAYS use
 html_encode behind the scenes. This means that you're safe to assign any value to them without
