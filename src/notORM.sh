@@ -74,7 +74,7 @@ alias _data_parse_pairs='
 '
 
 # internal function. take search and column, generate a sed matching expr from them
-# data_gen_expr() -> $expr
+# _data_gen_expr() -> $expr
 _data_gen_expr() {
 	# we need the pairs sorted due to how the sed expr generation works
 	local IFS=$'\01\n'
@@ -83,13 +83,9 @@ _data_gen_expr() {
 		echo "${column[i]}"$'\01'"${search[i]}"
 	done | sort -n -t$'\01'))
 
-	local last=0
+	local last=-1
 	for (( i=0; i<${#sorted[@]}; i=i+2 )); do
-		if [[ $((sorted[i] - last)) -le 1 && $i != 0 ]]; then
-			expr+="$(_sed_sanitize "${sorted[i+1]}")${delim}"
-		else
-			expr+="$(repeat $((sorted[i] - last)) "[^${delim}]*${delim}")$(_sed_sanitize "${sorted[i+1]}")${delim}"
-		fi
+		expr+="$(repeat $((sorted[i] - last - 1)) "[^${delim}]*${delim}")$(_sed_sanitize "${sorted[i+1]}")${delim}"
 		last="${sorted[i]}"
 	done
 }

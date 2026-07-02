@@ -4,12 +4,13 @@ store="storage/notORM-test.dat"
 notORM_add_get() {
 	prepare() {
 		source src/notORM.sh
-		rm "$store"
+		rm "$store" "$store.cols"
 		
-		a=("$value" 1 "$value_")
+		a=("$value" 1 "$value_" test)
 		data_add "$store" a
 		for i in {2..16}; do
 			a[1]=$i
+			a[3]="test$i"
 			data_add "$store" a
 		done
 	}
@@ -77,6 +78,18 @@ notORM_yeet_multiple_filters() {
 		return 1
 	}
 }
+
+notORM_yeet_MEGAFILTER() {
+	tst() {
+		data_yeet "$store" { 6 1 } { "$value" } { test6 3 }
+		data_get "$store" { 6 1 }
+		if [[ $? == 2 ]]; then
+			return 0
+		fi
+		return 1
+	}
+}
+
 
 notORM_replace_oldsyntax() {
 	tst() {
@@ -243,6 +256,7 @@ subtest_list=(
 	notORM_yeet_oldsyntax
 	notORM_yeet
 	notORM_yeet_multiple_filters
+	notORM_yeet_MEGAFILTER
 	notORM_replace_oldsyntax
 	notORM_backslashes
 	notORM_add_autoincrement

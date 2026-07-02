@@ -5,6 +5,9 @@ source src/notORM.sh
 
 # try running the migration system and checking if the migration root gets written
 migrate_test_sanity() {
+	prepare() {
+		mkdir -p app/migrations
+	}
 	tst() {
 		migrate_check
 		if data_get storage/migrations.dat { }; then
