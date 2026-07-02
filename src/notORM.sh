@@ -365,22 +365,25 @@ data_yeet() {
 
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
-
+				
 		local expr
 		_data_gen_expr
-		expr="/^${expr}.*/d"
+		expr="s${ctrl}^${expr}.*${ctrl}${ctrl}"
 	else # compat
 		local search="$2"
 		local column="${3:-0}"
 		local IFS=' '
 		if [[ $column == 0 ]]; then
-			local expr="/^$(_sed_sanitize "$2")${delim}.*/d"
+			local expr="s${ctrl}^$(_sed_sanitize "$2")${delim}.*${ctrl}${ctrl}"
 		else
-			local expr="/^$(repeat $column "[^${delim}]*${delim}")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) "[^${delim}]*${delim}")"'$'"/d"
+			local expr="s${ctrl}^$(repeat $column "[^${delim}]*${delim}")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) "[^${delim}]*${delim}")"'$'"${ctrl}${ctrl}"
 		fi
 	fi
-
-	sed -i "$expr" "$store"
+	
+	sed -i "$expr;/^$/d" "$store"
+	# we could use /$expr/d directly, but in case we find ANOTHER
+	# sed escaping bug that can be chained to RCE, I prefer to
+	# stay safe on this one.
 }
 
 # Creates a mapping between column number and a column name.

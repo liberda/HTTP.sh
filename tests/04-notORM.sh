@@ -90,6 +90,18 @@ notORM_yeet_MEGAFILTER() {
 	}
 }
 
+notORM_yeet_slash() {
+	tst() {
+		a=("asdf/" 17 2 3)
+		data_add "$store" a
+		data_yeet "$store" { "asdf/" } { 17 1 }
+		data_get "$store" { "asdf/" }
+		if [[ $? == 2 ]]; then
+			return 0
+		fi
+		return 255
+	}
+}
 
 notORM_replace_oldsyntax() {
 	tst() {
@@ -257,6 +269,7 @@ subtest_list=(
 	notORM_yeet
 	notORM_yeet_multiple_filters
 	notORM_yeet_MEGAFILTER
+	notORM_yeet_slash
 	notORM_replace_oldsyntax
 	notORM_backslashes
 	notORM_add_autoincrement
