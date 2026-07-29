@@ -60,15 +60,6 @@ elif [[ ! -f "config/master.sh" ]]; then
 fi
 source config/master.sh
 
-if [[ "$HTTPSH_VERSION" != "${cfg[init_version]}" ]]; then
-	echo "WARN: HTTP.sh was updated since this instance was initialized (config v${cfg[init_version]:-(none)}, runtime v$HTTPSH_VERSION). There may be breaking changes.
-
-Check for breaking changes (announced on IRC and in \`git log\`),
-then use this to ACK the message:
-
-./http.sh bump"
-fi	
-
 while read i; do
 	if ! which $i > /dev/null 2>&1; then
 		echo "ERROR: can't find $i"
@@ -137,6 +128,32 @@ for path in "${cfg[namespace]}/util/" "src/util/"; do
 done
 unset path HTTPSH_SCRIPTNAME
 
+if [[ "$HTTPSH_VERSION" != "${cfg[init_version]}" ]]; then
+	source src/changelog.sh
+	if [[ ! "${cfg[init_version]}" ]]; then
+		init_ver=""
+	else
+		init_ver="v${cfg[init_version]}"	
+	fi
+
+	if ! check_ver "v$HTTPSH_VERSION" "$init_ver"; then
+		echo "ERR: HTTP.sh has been updated, and there are breaking changes. (config v${cfg[init_version]:-(none)}, runtime v$HTTPSH_VERSION)
+
+BREAKING CHANGES:
+$breaking
+Please review the above list, then use \`./http.sh bump\` to ACK the message.
+"
+		exit 1
+	else
+		echo "WARN: HTTP.sh was updated since this instance was initialized (config v${cfg[init_version]:-(none)}, runtime v$HTTPSH_VERSION).
+
+There should be no breaking changes, but you still should review the CHANGELOG.
+Afterwards, use this to ACK the message:
+
+./http.sh bump"
+	fi
+fi
+
 cat <<EOF >&2
  _    _ _______ _______ _____  ______ _    _ 
 | |  | |_______|_______|  _  \/  ___/| |  | |
@@ -155,6 +172,9 @@ elif [[ "$1" == "debuggier" ]]; then
     export PS4=' ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
     echo "[DEBUG] Activated debuggier mode - stderr and call trace will be shown"
     set -x
+elif [[ "$1" && "$1" != '' ]]; then
+	echo "Unknown option/util $1; aborting"
+	exit 1
 fi
 
 source src/notORM.sh

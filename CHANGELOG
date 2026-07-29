@@ -1,0 +1,94 @@
+v0.97.6
+---
+
+New:
+- notORM: support for named fields
+- notORM: assoc array back-resolution
+- changelog: initial support; searches for breaking changes and notifies the admin after an upgrade
+
+Fixes:
+- notORM: fix an off-by-one causing some queries to return empty
+
+Misc:
+- attempted to improve the FreeBSD compat situation, with limited success
+- fixed scope on some variables in misc
+
+
+v0.97.5
+---
+
+New:
+- migrations (run-once scripts for clean upgrades; see docs/migrations.md)
+- util/account.sh (helper for managing accounts from console)
+
+Fixed:
+- server: parsing fixes
+- http_array shows a single value if the request didn't contain a real array
+
+
+v0.97.4
+---
+
+New:
+- API for accessing HTTP arrays (`http_array`)
+
+Misc:
+- unified internal API for parsing urlencoded GET/POST params
+- perf: reduced amount of basename calls in vhost logic
+- docs improvements
+
+
+v0.97.3.1
+---
+
+Fixes:
+- `${r[@]}` is no logner mangled by data_iter
+- remove spurious git invocation in backticks in the upgrade reminder code
+
+
+v0.97.3
+---
+
+New:
+- helper utils (maintenance scripts running in a known environment, invoked with
+  `./http.sh <utilname>`. list of utils: `./http.sh utils`)
+- util/bump: new util
+- util/notORM: new util
+
+Fixes:
+- socat now properly binds without IPv6 routes
+- template: better handling of nonexistant files
+- allow httpsh to be invoked with a PWD that's not the root dir
+
+
+v0.97.2
+---
+
+Description: bugfix release.
+
+Fixed:
+- template: fix a hypothetical LFI in the include paths
+- template: default include path now processed properly
+
+
+v0.97.1
+---
+
+Description: (this is an old release, changes are handpicked. look at git log for more details)
+
+BREAKING:
+- template paths are now relative to the namespace directory (usually `app/`). Check the docs,
+  or set `template_relative_paths="./"` to bring back the previous behavior.
+
+New:
+- notORM: support new syntax for data_yeet and data_iter
+- websocket: full rewrite, new APIs
+- server: generic r[url_clean]
+
+Fixed:
+- notORM: fix a couple regressions
+- secfixes: fix a template bug that could be chained to RCE
+
+Misc:
+- relicense to BSD-3-Clause
+
