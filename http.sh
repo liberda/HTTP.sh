@@ -15,11 +15,13 @@ setup_config() {
 	echo "cfg[init_version]=$HTTPSH_VERSION" >> "config/master.sh"
 }
 
-if [[ "${0##*/}" == "http.sh" ]]; then
+if [[ ! -f "$PWD/http.sh" && "${0##*/}" == "http.sh" ]]; then
 	# make sure that working directory is http.sh root
 	cd "${0%/*}"
-elif [[ ! -f "$PWD/http.sh" ]]; then
-	echo -e "Could not detect HTTP.sh directory\nPlease run HTTP.sh inside its designated directory"
+fi
+
+if [[ ! -f "$PWD/http.sh" ]]; then # wth?
+	echo -e "Could not find the HTTP.sh directory\nPlease run HTTP.sh in its directory, or call it with a full path."
 	exit 1
 fi
 
