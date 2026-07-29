@@ -52,3 +52,7 @@ cfg[websocket_enable]=false
 cfg[notORM_always_assoc]=false
 
 cfg[template_date_format]='%Y-%m-%d %H:%M:%S'
+
+# should we warn you about breaking changes in HTTP.sh?
+# true by default, set false to disable
+cfg[error_on_breaking_changes]=true

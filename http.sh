@@ -143,7 +143,10 @@ BREAKING CHANGES:
 $breaking
 Please review the above list, then use \`./http.sh bump\` to ACK the message.
 "
-		exit 1
+		if [[ "${cfg[error_on_breaking_changes]}" != false ]]; then
+			exit 1
+		fi
+		echo "(error downgraded to a warning with cfg[error_on_breaking_changes])"
 	else
 		echo "WARN: HTTP.sh was updated since this instance was initialized (config v${cfg[init_version]:-(none)}, runtime v$HTTPSH_VERSION).
 
