@@ -140,8 +140,9 @@ declare -p asdf
 ```
 
 Mapping to associative arrays comes at a slight performance penalty; For legacy reasons, you *need*
-to define the assoc array beforehand or set the new `cfg[notORM_always_assoc]`, which will do it
-for you. Without either of those two set up, notORM will still provide a normal numbered array.
+to declare the assoc array beforehand (i.e. pass a reference to an assoc, which notORM will detect
+and fill out with named keys), or set the new `cfg[notORM_always_assoc]`, which will do it for you.
+In any other case, notORM will still provide a normal numbered array.
 
 If an assoc array is requested, but the mapping is not available, notORM will return an assoc
 array with numbers instead of labels; same is true for incomplete mappings (too few elements).
