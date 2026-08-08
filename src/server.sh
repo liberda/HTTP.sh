@@ -35,11 +35,11 @@ post_length=0
 # start reading the stream here instead of the loop below;
 # this way, we can detect if the connection is even valid HTTP.
 # we're reading up to 8 characters and waiting for a space.
-read -d' ' -r -n8 param
+read -d' ' -r -n8 -t "${cfg[wait_for_initial_read]:-30}" param
 
 shopt -s nocasematch # only for initial parse; saves us *many* sed calls
 
-if [[ "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS, HEAD
+if [[ "$param" && "${param,,}" =~ ^(get|post|patch|put|delete|meow) ]]; then # TODO: OPTIONS, HEAD
 	r[method]="${param%% *}"
 	r[method]="${r[method]^^}"
 	read -r param
@@ -261,7 +261,7 @@ if [[ "${r[post]}" == true ]] && [[ "${r[status]}" == 200 ||  "${r[status]}" == 
 			# i don't want to rely on that for security.
 			#
 			# at some point, we should refactor this to use a larger (but safe) blocksize
-			data="$(dd count="${r[content_length]}" bs=1)"
+			data="$(dd status=none count="${r[content_length]}" bs=1)"
 		else
 			if read -t0; then
 				data=
