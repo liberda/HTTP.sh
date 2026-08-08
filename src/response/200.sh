@@ -31,7 +31,7 @@ if [[ ${r[status]} == 212 ]]; then
 		source "${r[view]}"
 	else
 		# open a dummy fd to keep our data in
-		exec 253<> >(tail -c 2047m)
+		exec 253> >(tail -c 2047m)
 		source "${r[view]}" >&253
 		__headers
 		exec 253<&- # flush the data out
@@ -40,7 +40,7 @@ if [[ ${r[status]} == 212 ]]; then
 	fi
 
 elif [[ "${r[uri]}" =~ \.${cfg[extension]}$ ]]; then
-	exec 253<> >(tail -c 2047m)
+	exec 253> >(tail -c 2047m)
 	source "${r[uri]}" >&253
 	__headers
 	exec 253<&-
