@@ -96,12 +96,13 @@ _data_gen_expr() {
 #
 # 3rd argument is optional, and will specify whether to insert an auto-increment
 # ID column. False by default; Setting to true will cause an internal data_iter
-# call. The inserted ID column is always the zeroeth one.
+# call. The inserted ID column is always the zeroeth one. The ID is returned in
+# variable $notORM_id.
 #
 # this function will create some helper files if they don't exist. those
 # shouldn't be removed, as other functions may use them for data mangling.
 #
-# data_add(store, array, [numbered])
+# data_add(store, array, [numbered]) -> $?, $notORM_id
 data_add() {
 	local -n ref="$2"
 	[[ "${#ref[@]}" -gt 0 ]] || return 1
@@ -113,15 +114,16 @@ data_add() {
 		if [[ "$3" == true ]]; then
 			res+="0$delim"
 			echo "$((${#ref[@]}+1))" > "${1}.cols"
+			notORM_id=0
 		else
 			echo "${#ref[@]}" > "${1}.cols"
 		fi
 	elif [[ "$3" == true ]]; then
 		local data
 		data_iter "$1" { } : # get last element
-		local id=$(( ${data[0]}+1 )) # returns 1 on non-int values
+		notORM_id=$(( ${data[0]}+1 )) # returns 1 on non-int values
 		
-		res+="$id$delim"
+		res+="$notORM_id$delim"
 	fi
 
 	if [[ "${ref@a}" == A ]]; then
