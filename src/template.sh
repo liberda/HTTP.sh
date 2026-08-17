@@ -135,6 +135,8 @@ function render() {
 			echo -n 's/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g'
 		) | tr "${_tpl_newline}" '\n' | sed -E 's/�UwU�/\&/g'
 	else
+		# trim conditionals, so that we can use them in loops - stopgap measure
+		buf+='s/\{\{start \?([a-zA-Z0-9_-]*[^}])\}\}(.*\{\{else \?\1\}\}(.*)\{\{end \?\1\}\}|.*\{\{end \?\1\}\})/\3/g'
 		tr '\n' "${_tpl_newline}" <<< "$template" | sed -E -f <(echo -n "$buf") | tr "${_tpl_newline}" '\n'
 	fi
 
