@@ -1,10 +1,7 @@
 declare -A cfg
 
 cfg[ip]=[::] # IP address to bind to - use [::] to bind to all
-
-cfg[http]=true # enables/disables listening on HTTP
 cfg[port]=1337 # HTTP port
-cfg[socat_only]=false
 
 cfg[namespace]='app'
 
@@ -14,11 +11,6 @@ cfg[autoindex]=true
 
 cfg[auth_required]=false
 cfg[auth_realm]="asdf"
-
-cfg[ssl]=false # enables/disables listening on HTTPS
-cfg[ssl_port]=8443
-cfg[ssl_cert]=''
-cfg[ssl_key]=''
 
 cfg[extension]='shs'
 cfg[extension_websocket]='shx'

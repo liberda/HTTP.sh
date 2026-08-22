@@ -74,13 +74,6 @@ while read i; do
 	[[ $? != 0 ]] && echo "WARNING: can't find $i"
 done < src/dependencies.optional
 
-if ! which ncat > /dev/null 2>&1; then
-	if [[ ${cfg[socat_only]} != true ]]; then
-		echo "ERR: can't find ncat, and cfg[socat_only] is not set to true"
-		error=true
-	fi
-fi
-
 if [[ $error == true ]]; then
 	echo "Fix above dependencies, and I might just let you pass."
 	exit 1
@@ -160,12 +153,12 @@ Afterwards, use this to ACK the message:
 fi
 
 cat <<EOF >&2
- _    _ _______ _______ _____  ______ _    _ 
-| |  | |_______|_______|  _  \/  ___/| |  | |
-| |__| |  | |     | |  | |_| | |___  | |__| |
-| |__| |  | |     | |  |  ___/\___ \ | |__| |
-| |  | |  | |     | |  | |     ___\ \| |  | |
-|_|  |_|  |_|     |_|  |_|  □ /_____/|_|  |_| v$HTTPSH_VERSION
+     __   _________________         __ 
+  -=/ /  / /_  _/_  _/  _  \ ___   / / 
+ -=/ /__/ / / /  / / / /_/ // __\ / /_
+-=/ /--/ / / /  / / / ____/ \__ \/ /-,\ 
+</_/  /_/ /_/  /_/ /_/   . /___//_/ /_/
+                                 v$HTTPSH_VERSION
 EOF
 
 if [[ "$1" == "debug" ]]; then
@@ -202,49 +195,10 @@ else
     socat_listen="TCP-LISTEN"
 fi
 
-if [[ ${cfg[socat_only]} == true ]]; then
-	echo "[INFO] listening directly via socat, assuming no ncat available"
-	echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
-	if [[ ${cfg[dbg]} == true ]]; then
-		socat $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'"
-	else
-		socat $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
-		if [[ $? != 0 ]]; then
-			echo "[WARN] socat quit with a non-zero status; Maybe the port is in use?"
-		fi
-	fi
+echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
+if [[ ${cfg[dbg]} == true ]]; then
+	socat -T 300 $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'"
 else
-	if [[ ${cfg[http]} == true ]]; then
-		# this is a workaround because ncat kept messing up large (<150KB) files over HTTP - but not over HTTPS!
-		socket=$(mktemp -u /tmp/socket.XXXXXX)
-		if [[ ${cfg[dbg]} == true ]]; then
-			# ncat with the "timeout" (-i) option has a bug which forces it
-			# to quit after the first time-outed connection, ignoring the
-			# "broker" (-k) mode. This is a workaround for this. 
-			while true; do
-				ncat -i 600s -l -U "$socket" -c "src/server.sh ${cfg[debuggier]}" -k
-			done &
-		else
-			while true; do
-				ncat -i 600s -l -U "$socket" -c src/server.sh -k 2>> /dev/null
-			done &
-		fi
-		socat $socat_listen:${cfg[port]},fork,bind=${cfg[ip]} UNIX-CLIENT:$socket &
-		echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]} through '$socket'"
-	fi
-
-	if [[ ${cfg[ssl]} == true ]]; then
-		echo "[SSL] listening on port ${cfg[ip]}:${cfg[ssl_port]}"
-		if [[ ${cfg[dbg]} == true ]]; then
-			while true; do
-				ncat -i 600s -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}")
-			done &
-		else
-			while true; do
-				ncat -i 600s -l ${cfg[ip]} ${cfg[ssl_port]} -c src/server.sh -k --ssl $([[ ${cfg[ssl_key]} != '' && ${cfg[ssl_cert]} != '' ]] && echo "--ssl-cert ${cfg[ssl_cert]} --ssl-key ${cfg[ssl_key]}") 2>> /dev/null
-			done &
-		fi
-	fi
+	socat -T 300 $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
+	[[ $? != 0 ]] && echo "[WARN] socat quit with a non-zero status; Maybe the port is in use?"
 fi
-
-wait
