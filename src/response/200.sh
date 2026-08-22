@@ -32,19 +32,20 @@ if [[ ${r[status]} == 212 ]]; then
 	else
 		# open a dummy fd to keep our data in
 		exec 253> >(tail -c 2047m)
-		source "${r[view]}" >&253
+		_httpsh_tail_pid=$!
+		source "${r[view]}" >&253-
 		__headers
 		exec 253<&- # flush the data out
-		wait # wait for the transfer to finish
-
+		wait "$_httpsh_tail_pid" # wait for the transfer to finish
 	fi
 
 elif [[ "${r[uri]}" =~ \.${cfg[extension]}$ ]]; then
 	exec 253> >(tail -c 2047m)
-	source "${r[uri]}" >&253
+	_httpsh_tail_pid=$!
+	source "${r[uri]}" >&253-
 	__headers
-	exec 253<&-
-	wait
+	exec 253<&- # flush the data out
+	wait "$_httpsh_tail_pid" # wait for the transfer to finish
 
 else
 	__headers
