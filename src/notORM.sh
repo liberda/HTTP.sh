@@ -83,6 +83,11 @@ _data_gen_expr() {
 		echo "${column[i]}"$'\01'"${search[i]}"
 	done | sort -n -t$'\01'))
 
+	if [[ "${search[0]}" == "" && "${#search[@]}" == 1 ]]; then
+		expr='.*'
+		return
+	fi
+
 	local last=-1
 	for (( i=0; i<${#sorted[@]}; i=i+2 )); do
 		expr+="$(repeat $((sorted[i] - last - 1)) "[^${delim}]*${delim}")$(_sed_sanitize "${sorted[i+1]}")${delim}"
