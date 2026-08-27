@@ -3,8 +3,11 @@ v0.97.6
 
 New:
 - notORM: support for named fields
-- notORM: assoc array back-resolution
+- notORM: assoc array back-resolution (fill out an array from named fields)
+- notORM: data_add with autoincrement will return last element ID to the caller
+          in the variable $notORM_id
 - changelog: initial support; searches for breaking changes and notifies the admin after an upgrade
+- template: implemented special -unset- type
 
 Fixes:
 - notORM: fix an off-by-one causing some queries to return empty
@@ -12,7 +15,11 @@ Fixes:
 Misc:
 - attempted to improve the FreeBSD compat situation, with limited success
 - fixed scope on some variables in misc
+- initial probe read can now timeout, should reduce hung processes
 
+BREAKING:
+- removed support for ncat due to numerous bugs
+- removed support for listening with TLS due to ncat dependency
 
 v0.97.5
 ---

@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-HTTPSH_VERSION=0.97.5
+HTTPSH_VERSION=0.97.6
