@@ -19,16 +19,22 @@ function mailsend() {
 	tmp="$(mktemp)"
 	sender_name="$sender_name" mailgen "${cfg[mail]}" "$1" "$2" "$3" > "$tmp"
 
-	curl \
-		$([[ "${cfg[mail_ignore_bad_cert]}" == true ]] && printf -- "-k") \
-		$([[ "${cfg[mail_ssl]}" == true ]] && printf -- "smtps://${cfg[mail_server]}") \
-		$([[ "${cfg[mail_ssl]}" != true ]] && printf -- "smtp://${cfg[mail_server]}") \
-		--mail-from "${cfg[mail]}" \
-		--mail-rcpt "$1" \
-		--upload-file "$tmp" \
-		--user "${cfg[mail]}:${cfg[mail_password]}"
+    if [[ "$mailer_testing_out" ]]; then
+        cp "$tmp" "$mailer_testing_out"
+    	res=$?
+    else
+        curl \
+            $([[ "${cfg[mail_ignore_bad_cert]}" == true ]] && printf -- "-k") \
+            $([[ "${cfg[mail_ssl]}" == true ]] && printf -- "smtps://${cfg[mail_server]}") \
+            $([[ "${cfg[mail_ssl]}" != true ]] && printf -- "smtp://${cfg[mail_server]}") \
+            --mail-from "${cfg[mail]}" \
+            --mail-rcpt "$1" \
+            --upload-file "$tmp" \
+            --user "${cfg[mail]}:${cfg[mail_password]}"
 
-	res=$?
+	    res=$?
+    fi
+
 	rm "$tmp"
 	return $res
 }

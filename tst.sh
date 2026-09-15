@@ -26,14 +26,23 @@ _defaults() {
 	}
 }
 
+source app/localcfg.sh
 _defaults
 
 on_error() {
 	on_error_default
 }
 
+on_error_mail() {
+    on_error_default_mail
+}
+
 on_success() {
 	on_success_default
+}
+
+on_success_mail() {
+    on_success_default_mail
 }
 
 on_success_default() {
@@ -42,9 +51,22 @@ on_success_default() {
 	return 0
 }
 
+on_success_default_mail() {
+    echo "OK: $test_name (mailer)"
+	(( ok_count++ ))
+	return 0
+}
+
 on_error_default() {
 	echo "FAIL: $test_name"
 	echo "(res: $res)"
+	(( fail_count++ ))
+	return 0
+}
+
+on_error_default_mail() {
+    echo "FAIL: $test_name (mailer)"
+	echo "(res: $mail_res)"
 	(( fail_count++ ))
 	return 0
 }
@@ -114,7 +136,17 @@ _a() {
 			on_error
 		fi
 	fi
-	unset match match_sub match_begin match_end match_not
+
+    if [[ "$match_mail" ]]; then
+        mail_res="$(cat "$mailer_testing_out")"
+        if [[ "$mail_res" == *"$match_mail"* ]]; then
+			on_success_mail
+		else
+			on_error_mail
+		fi
+    fi
+
+	unset match match_sub match_begin match_end match_not mail_res match_mail
 	prepare() { :; }
 }
 
@@ -153,6 +185,11 @@ for j in "$@"; do
 			_a
 		done
 	fi
+
+    if [[ -e "$mailer_testing_out" ]]; then
+        rm "$mailer_testing_out"
+    fi
+
 	_defaults
 done
 
