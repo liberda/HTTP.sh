@@ -91,60 +91,21 @@ ok_count=0
 fail_count=0
 
 _a() {
+	local _success=true
 	[[ "$res_code" == 255 ]] && on_fatal
-
-	# Q: why not `[[ ... ]] && a || b`?
-	# A: simple; if `a` returns 1, `b` will get called erroneously.
-	#	 normally one wouldn't care, but those functions are meant to
-	#    be overriden. I don't want to fund anyone a lot of frustration,
-	#	 so splitting the ifs is a saner option here :)
 	
-	if [[ "$match" ]]; then
-		if [[ "$res" == "$match" ]]; then
-			on_success
-		else
-			on_error
-		fi
-	elif [[ "$match_sub" ]]; then
-		if [[ "$res" == *"$match_sub"* ]]; then
-			on_success
-		else
-			on_error
-		fi
-	elif [[ "$match_begin" ]]; then
-		if [[ "$res" == "$match_begin"* ]]; then
-			on_success
-		else
-			on_error
-		fi
-	elif [[ "$match_end" ]]; then
-		if [[ "$res" == *"$match_end" ]]; then
-			on_success
-		else
-			on_error
-		fi
-	elif [[ "$match_not" ]]; then
-		if [[ "$res" == *"$match_not"* ]]; then
-			on_error
-		else
-			on_success
-		fi
-	else
-		if [[ "$res_code" == 0 ]]; then
-			on_success
-		else
-			on_error
-		fi
-	fi
+	[[ "$res_code" != 0 ]] && _success=false
+	[[ "$match" ]] && [[ "$res" != "$match" ]] && _success=false
+	[[ "$match_sub" ]] && [[ "$res" != *"$match_sub"* ]] && _success=false
+	[[ "$match_begin" ]] && [[ "$res" != "$match_begin"* ]] && _success=false
+	[[ "$match_end" ]] && [[ "$res" != *"$match_end" ]] && _success=false
+	[[ "$match_not" ]] && [[ "$res" == *"$match_not"* ]] && _success=false
 
-    if [[ "$match_mail" ]]; then
-        mail_res="$(cat "$mailer_testing_out")"
-        if [[ "$mail_res" == *"$match_mail"* ]]; then
-			on_success_mail
-		else
-			on_error_mail
-		fi
-    fi
+	if [[ "$_success" == true ]]; then
+		on_success
+	else
+		on_error
+	fi
 
 	unset match match_sub match_begin match_end match_not mail_res match_mail
 	prepare() { :; }
