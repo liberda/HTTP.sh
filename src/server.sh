@@ -79,9 +79,9 @@ r[user_agent]="${headers["user-agent"]}"
 r[websocket_key]="${headers["sec-websocket-key"]}"
 r[req_headers]="$headers"
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
-r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}/$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
+r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}/")"
 r[url_clean]="${r[url]%\?*}"
-[[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}") # dead code
+pwd="${r[uri]}" # dead code
 
 if [[ -n "${headers["content-type"]}" ]]; then
     IFS=';'
@@ -191,6 +191,9 @@ for (( i=0; i<${#route[@]}; i=i+3 )); do
 done
 unset IFS
 if [[ ${r[status]} != 212 && ${r[status]} != 102 ]]; then
+    r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}/$(sed -E 's/\?(.*)$//' <<< "${r[url]}")")"
+    [[ -d "${r[uri]}/" ]] && pwd="${r[uri]}" || pwd=$(dirname "${r[uri]}") # dead code
+
 	if [[ -a "${r[uri]}" && ! -r "${r[uri]}" ]]; then
 		r[status]=403
 	elif [[ "${r[uri]}" != "$(realpath "${cfg[namespace]}/${cfg[root]}")"* ]]; then
@@ -209,7 +212,11 @@ if [[ ${r[status]} != 212 && ${r[status]} != 102 ]]; then
 	fi
 fi
 
-echo "${r[url]}" >&2
+if [[ -z "${r[url]}" ]]; then
+    echo "/" >&2
+else
+    echo "${r[url]}" >&2
+fi
 
 # the app config gets loaded a second time to allow for path-specific config modification
 [[ -f "${cfg[namespace]}/config.sh" ]] && source "${cfg[namespace]}/config.sh"
