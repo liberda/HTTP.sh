@@ -143,6 +143,31 @@ function session_get_username() {
 	return 1
 }
 
+# session_get_csrf_token(session) -> $res
+function session_get_csrf_token() {
+    [[ ! "$1" ]] && return 1
+    unset IFS
+    local session
+
+    if data_get secret/sessions.dat "$1" 2 session; then
+        declare -ga res="${session[4]}"
+        return 0
+    fi
+
+    return 1
+}
+
+# session_verify_csrf_token(session, token)
+function session_verify_csrf_token() {
+    [[ ! "$1" || ! "$2" ]] && return 1
+    if ! session_get_csrf_token "$1"; then
+        return 1
+    fi
+
+    [[ "$res" != "$2" ]] && return 1
+    return 0
+}
+
 # THIS FUNCTION IS DANGEROUS
 # delete_account(username)
 function delete_account() {
@@ -225,7 +250,7 @@ session_purge() {
 _new_session() {
 	[[ ! "$1" ]] && return 1
 	[[ "$2" == true ]] && local forever=true || local forever=false
-	session=("$1" "$(date '+%s')" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)" "$forever")
+	session=("$1" "$(date '+%s')" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)" "$forever" "$(dd if=/dev/urandom bs=24 count=1 status=none | xxd -p)")
 	data_add secret/sessions.dat session
 }
 
