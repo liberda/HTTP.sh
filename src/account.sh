@@ -44,7 +44,7 @@ function login() {
 	fi
 
 	local username=$(url_decode "$1")
-	[[ "$3" ]] && local forever=true
+	[[ "$3" == true ]] && local forever=true
 	unset IFS
 
 	if ! data_get secret/users.dat "$username" 0 user; then
