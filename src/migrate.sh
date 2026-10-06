@@ -23,9 +23,10 @@ migrate_check() {
         initial="${res[1]}"
     fi
 
-	while read fn; do
-		if ! data_get storage/migrations.dat { "$fn" }; then
-			ts="${fn%%_*}"
+	while read -r fn; do
+		migration_name="$(basename "$fn")"
+		if ! data_get storage/migrations.dat { "$migration_name" }; then
+			ts="${migration_name%%_*}"
 
 			if [[ ! "$ts" =~ ^[0-9]+$ ]]; then
 				echo "[migrations] $fn has an invalid name. See docs/migrations.md for more information."
@@ -33,17 +34,17 @@ migrate_check() {
 			fi
 
 			if [[ "$ts" -lt "$initial" ]]; then
-				log_dbg "[migrations] skipping $fn"
+				log_dbg "[migrations] skipping $migration_name"
 				continue
 			fi
 
             if [[ $init ]]; then
-                echo "[migrations] WARNING: running $fn after application initalization (clock out of date or missplaced migration?)"
+                echo "[migrations] WARNING: running $migration_name after application initalization (clock out of date or misplaced migration?)"
             else
-			    echo "[migrations] running $fn"
+			    echo "[migrations] running $migration_name"
             fi
 
-			source "${cfg[namespace]}/migrations/$fn"
+			source "$fn"
 			if [[ $? != 0 ]]; then
                 echo "[migrations] failed to run $migration_name"
                 exit 1
@@ -52,7 +53,7 @@ migrate_check() {
 			a=("$fn" "$EPOCHSECONDS")
 			data_add storage/migrations.dat a || return $?
 		else
-			log_dbg "[migrations] $fn ran at ${res[1]}"
+			log_dbg "[migrations] $migration_name ran at ${res[1]}"
 		fi
-	done < <(ls "${cfg[namespace]}/migrations/")
+	done < <(find "${cfg[namespace]}/migrations/" "src/migrations/" -type f)
 }

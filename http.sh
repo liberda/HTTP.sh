@@ -179,14 +179,15 @@ source src/notORM.sh
 source src/migrate.sh
 source src/worker.sh
 
+# before sourcing the app config, because we NEED to run before workers start
+if [[ "$HTTPSH_RUN_MIGRATIONS" != "false" ]]; then
+	migrate_check
+fi
+
 if [[ -f "${cfg[namespace]}/config.sh" ]]; then
 	run_once=true
 	source "${cfg[namespace]}/config.sh"
 	unset run_once
-fi
-
-if [[ "$HTTPSH_RUN_MIGRATIONS" != "false" ]]; then
-	migrate_check
 fi
 
 if [[ "${cfg[ip]}" == *":"* ]]; then
