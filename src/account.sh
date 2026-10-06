@@ -7,7 +7,7 @@
 # optional extra data (email, OTP...)
 #
 # [extra=()] register(username, password)
-function register() {
+register() {
 	if [[ ! "$1" || ! "$2" ]]; then
 		reason="User/password empty!"
 		return 1
@@ -37,7 +37,7 @@ function register() {
 }
 
 # login(username, password, [forever]) -> [res]
-function login() {
+login() {
 	if [[ ! "$1" || ! "$2" ]]; then
 		reason="User/password empty!"
 		return 1
@@ -80,7 +80,7 @@ function login() {
 }
 
 # login_simple(base64)
-function login_simple() {
+login_simple() {
 
 	local data=$(base64 -d <<< "$3")
 	local password=$(sed -E 's/^(.*)\://' <<< "$data")
@@ -104,7 +104,7 @@ function login_simple() {
 }
 
 # logout()
-function logout() {
+logout() {
 	if [[ "${cookies[sh_session]}" ]]; then
 		data_yeet secret/sessions.dat "${cookies[sh_session]}" 2
 	fi
@@ -113,7 +113,7 @@ function logout() {
 }
 
 # session_verify(session) -> [res]
-function session_verify() {
+session_verify() {
 	[[ ! "$1" ]] && return 1
 	unset IFS
 	local session
@@ -129,7 +129,7 @@ function session_verify() {
 }
 
 # session_get_username(session)
-function session_get_username() {
+session_get_username() {
 	[[ ! "$1" ]] && return 1
 	unset IFS
 	local session
@@ -144,7 +144,7 @@ function session_get_username() {
 }
 
 # session_get_csrf_token(session) -> $res
-function session_get_csrf_token() {
+session_get_csrf_token() {
     [[ ! "$1" ]] && return 1
     unset IFS
     local session
@@ -158,7 +158,7 @@ function session_get_csrf_token() {
 }
 
 # session_verify_csrf_token(session, token)
-function session_verify_csrf_token() {
+session_verify_csrf_token() {
     [[ ! "$1" || ! "$2" ]] && return 1
     if ! session_get_csrf_token "$1"; then
         return 1
@@ -170,7 +170,7 @@ function session_verify_csrf_token() {
 
 # THIS FUNCTION IS DANGEROUS
 # delete_account(username)
-function delete_account() {
+delete_account() {
   [[ ! "$1" ]] && return 1
   data_yeet secret/users.dat "$1"
 }
