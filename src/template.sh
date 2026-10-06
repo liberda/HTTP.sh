@@ -10,6 +10,11 @@ function render() {
 
 	_template_find_absolute_path "$2" || exit 1
 
+	if [[ -n "${r[status]}" && "$1" != /dev/stdin && "$1" != "/dev/fd/"* ]]; then
+		get_mime "$tplfile"
+		header "content-type: $mimetype"
+	fi
+
 	if [[ "$3" != true ]]; then
 		local template="$(tr -d "${_tpl_newline}${_tpl_ctrl}" < "$tplfile" | sed 's/\&/�UwU�/g')"
 	else
