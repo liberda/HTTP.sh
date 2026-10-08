@@ -22,6 +22,8 @@ function get_mime() {
 			mimetype=""
 		elif [[ $file == *".css" ]]; then
 			mimetype="text/css"
+		elif [[ $file == *".js" ]]; then
+			mimetype="application/javascript"
 		elif [[ $mime == "text/"* && $mime != "text/xml" ]]; then
 			mimetype="text/plain"
         # Technically image/x-icon isn't correct for all images (image/ico also exists) but 
