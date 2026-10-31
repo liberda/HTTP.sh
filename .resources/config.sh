@@ -8,3 +8,9 @@ if [[ "$run_once" ]]; then
 	# the following will only run once at startup, not with every request
 	:
 fi
+
+## overrides the default include path for templates
+## searches paths in order until it finds a file
+# template_relative_paths=(
+# 	"${cfg[namespace]}/template/"
+# )
