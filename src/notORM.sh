@@ -480,6 +480,18 @@ data_mapping() {
 		declare -g _notORM_revmap["$store,$n"]="$1"
 		(( n++ ))
 	done
+
+	if [[ "$run_once" && "${cfg[notORM_sqlite]}" ]]; then
+		q=
+		for (( i=0; i<n; i++ )); do
+			q+="${_notORM_revmap["$store,$i"]},"
+		done
+		q="${q%%,}"
+
+		sqlite3 "${cfg[notORM_sqlite]}" \
+			"CREATE TABLE IF NOT EXISTS $(_data_sqlite_normalize_name "$store")($q)"
+		echo "CREATE TABLE IF NOT EXISTS $(_data_sqlite_normalize_name "$store")($q)"
+	fi
 }
 
 _sed_sanitize() {
