@@ -406,7 +406,7 @@ data_replace_value() {
 # data_replace(store, search, array, [column])
 data_replace() {
 	[[ ! "$3" ]] && return 1
-	[[ ! -f "$1" ]] && return 4
+	# [[ ! -f "$1" ]] && return 4
 	local store="$1"
 	local output=
 	local tr
@@ -420,25 +420,37 @@ data_replace() {
 # 		_data_gen_expr
 # 		expr="s$ctrl^${expr}.*$ctrl"
 # 	else
-		local column=${4:-0}
+		local column=(${4:-0})
+		local search=("$2")
 		local -n ref="$3"
-		local IFS=' '
+		# local IFS=' '
 
-		if [[ $column == 0 ]]; then
-			local expr="s$ctrl^$(_sed_sanitize "$2")${delim}.*$ctrl"
-		else
-			local expr="s$ctrl^$(repeat $column "[^${delim}]*${delim}")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) "[^${delim}]*${delim}")"'$'"$ctrl"
-		fi
+		# if [[ $column == 0 ]]; then
+		# 	local expr="s$ctrl^$(_sed_sanitize "$2")${delim}.*$ctrl"
+		# else
+		# 	local expr="s$ctrl^$(repeat $column "[^${delim}]*${delim}")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) "[^${delim}]*${delim}")"'$'"$ctrl"
+		# fi
 
 	# fi
-	local i
-	for i in "${ref[@]}"; do
-		_trim_control "$i"
-		output+="$tr$delim"
+	local i refs= arr=
+	for (( i=0; i<${#ref[@]}; i++ )); do
+		_trim_control "${ref[i]}"
+		# output+="$tr$delim"
+		refs+="@${i}v,$tr"
+		arr+="${_notORM_revmap[$store,$i]} = @${i}v,"
 	done
+	arr="${arr%%,}"
 
-	expr+="$(_sed_sanitize_array "$output")$ctrl"
-	sed -i "$expr" "$store"
+	# expr+="$(_sed_sanitize_array "$output")$ctrl"
+	# sed -i "$expr" "$store"
+	
+	_data_sqlite_genexpr
+
+	echo -n "$refs" | sqlite3 "$notORM_sqlite" \
+		".param init" \
+		".import /dev/stdin --csv --schema temp sqlite_parameters" \
+		".mode ascii" \
+		"UPDATE $(_data_sqlite_normalize_name "$store") SET $arr WHERE $q"
 }
 
 # deletes entries from the `store` using `search`.
