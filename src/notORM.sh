@@ -115,21 +115,21 @@ data_add() {
 	local res=
 	local IFS=$'\n'
 
-	if [[ ! -f "$1" ]]; then
-		if [[ "$3" == true ]]; then
-			res+="0$delim"
-			echo "$((${#ref[@]}+1))" > "${1}.cols"
-			notORM_id=0
-		else
-			echo "${#ref[@]}" > "${1}.cols"
-		fi
-	elif [[ "$3" == true ]]; then
-		local data
-		data_iter "$1" { } : # get last element
-		notORM_id=$(( ${data[0]}+1 )) # returns 1 on non-int values
-		
-		res+="$notORM_id$delim"
-	fi
+	# if [[ ! -f "$1" ]]; then
+		# if [[ "$3" == true ]]; then
+		# 	res+="0$delim"
+		# 	echo "$((${#ref[@]}+1))" > "${1}.cols"
+		# 	notORM_id=0
+		# else
+		# 	echo "${#ref[@]}" > "${1}.cols"
+		# fi
+	# elif [[ "$3" == true ]]; then
+	# 	local data
+	# 	data_iter "$1" { } : # get last element
+	# 	notORM_id=$(( ${data[0]}+1 )) # returns 1 on non-int values
+	# 	
+	# 	res+="$notORM_id$delim"
+	# fi
 
 	if [[ "${ref@a}" == A ]]; then
 		local tmp=()
@@ -142,22 +142,108 @@ data_add() {
 				log_dbg "notORM: Oops! No mapping found for element $i on data_add operation for $store. Dropping element."
 			fi
 		done
-
-		for (( i=0; i<${#ref[@]}; i++ )); do
-			# this style of for ensures that if we have missing elems,
-			# they will get written as empty (avoiding mangling the columns)
-			_trim_control "${tmp[i]}"
-			res+="$tr$delim"
-		done
-	else
-		local i
-		for i in "${ref[@]}"; do
-			_trim_control "$i"
-			res+="$tr$delim"
-		done
 	fi
+	
+	refs= q=
+	for (( i=0; i<${#ref[@]}; i++ )); do # TODO: on number insert, cast to int?
+		refs+="@${i}i,${ref[i]}"$'\n'
+		q+="@${i}i,"
+	
+		# this style of for ensures that if we have missing elems,
+		# they will get written as empty (avoiding mangling the columns)
+		# _trim_control "${tmp[i]}"
+		# res+="$tr$delim"
+	done
+	q="${q%%,}"
+	table="$(_data_sqlite_normalize_name "$1")"
 
-	echo "$res" >> "$store" # TODO: some locking
+	echo -n "$refs" | sqlite3 "$notORM_sqlite" \
+		".param init" \
+		".import /dev/stdin --csv --schema temp sqlite_parameters" \
+		".mode ascii" \
+		"INSERT INTO $table VALUES($q);"
+
+	# echo "$res" >> "$store" # TODO: some locking
+}
+
+# Internal.
+# Takes $1 (a notORM store name) and normalizes it to a table name
+#
+# _data_sqlite_normalize_name(path)
+_data_sqlite_normalize_name() {
+	[[ ! "$1" ]] && return 1
+	# TODO
+	local name="$(basename "$1")"
+	echo "${name//.dat/}"
+}
+
+# Internal.
+# Takes ${search[@]} and ${column[@]}, generates a list of $refs
+# and an expression $q using those refs
+#
+# Optionally takes a number for starting ref ID (for chaining exprs)
+#
+# _data_sqlite_genexpr([n])
+_data_sqlite_genexpr() {
+	local n=${1:-0}
+	for (( n=0; n<${#search[@]}; n++ )); do
+		[[ ! "${search[0]}" && "${column[0]}" == 0 ]] && break
+		refs+="@${n}s,${search[n]}"$'\n'
+		refs+="@${n}c,_${column[n]}"$'\n'
+
+		if [[ "$n" == 0 ]]; then
+			q="WHERE "
+		else
+			q+="AND "
+		fi
+
+		# HACK: when importing temp.sqlite_parameters from stdin,
+		#       sqlite seems to be incorrectly assuming that everything
+		#       is a string? maybe there's a way to unfuck this,
+		#       but for now, we cast.
+		if [[ "${search[n]}" =~ ^[0-9]*$ ]]; then
+			q+="_${column[n]} = CAST(@${n}s AS INTEGER) "
+		else
+			q+="_${column[n]} = @${n}s "
+		fi
+		
+	done
+}
+
+# Internal.
+# Generates and runs a SELECT expression
+# 
+# _data_sqlite_select()
+_data_sqlite_select() {
+	[[ ! "$notORM_sqlite" || ! -f "$notORM_sqlite" ]] && return 1 # TODO: better name?
+	local i refs q table
+	table="$(_data_sqlite_normalize_name "$1")"
+	
+	_data_sqlite_genexpr
+
+	echo -n "$refs" | sqlite3 "$notORM_sqlite" \
+		".param init" \
+		".import /dev/stdin --csv --schema temp sqlite_parameters" \
+		".mode ascii" \
+		"SELECT * FROM $table $q;"
+}
+
+# Internal.
+# Generates and runs a DELETE expression
+# 
+# _data_sqlite_delete()
+_data_sqlite_delete() {
+	[[ ! "$notORM_sqlite" || ! -f "$notORM_sqlite" ]] && return 1 # TODO: better name?
+	local i refs q table
+	table="$(_data_sqlite_normalize_name "$1")"
+
+	_data_sqlite_genexpr
+
+	echo -n "$refs" | sqlite3 "$notORM_sqlite" \
+		".param init" \
+		".import /dev/stdin --csv --schema temp sqlite_parameters" \
+		".mode ascii" \
+		"DELETE FROM $table $q;"
 }
 
 # get one entry from store, filtering by search. exit after first result.
@@ -173,7 +259,7 @@ data_add() {
 # data_get(store, search, [column], [res]) -> $res / ${!4}
 data_get() {
 	[[ ! "$2" ]] && return 1
-	[[ ! -f "$1" ]] && return 4
+	# [[ ! -f "$1" ]] && return 4
 	local IFS=$'\n'
 	local store="$1"
 
@@ -205,21 +291,12 @@ data_get() {
 		ref=()
 	fi
 
-	local line
-	while read -r line; do
-		IFS=$delim
-		
-		# LOAD-BEARING!!
-		# without an intermediate variable, bash trims out empty
-		# objects. expansions be damned
-		local x="${line//$newline/$'\n'}"
+	IFS=$'\x1f'
+	while read -d$'\x1e' -r row; do
+		local x="${row//$newline/$'\n'}"
+		declare -p x
 		ref=($x)
-		local i
-		for (( i=0; i<${#search[@]}; i++ )); do
-			if [[ "${ref[${column[i]}]}" != "${search[i]}" && "${search[i]}" ]]; then
-				continue 2
-			fi
-		done
+
 		if [[ "$ref_type" == A ]]; then # populate the names!
 			for i in ${!ref[@]}; do
 				if [[ "${_notORM_revmap["$store,$i"]}" ]]; then
@@ -231,7 +308,7 @@ data_get() {
 			done
 		fi
 		return 0 # only reached if an entry matched all constraints
-	done < "$store"
+	done < <(_data_sqlite_select "$store") || return 2
 
 	unset ref
 	return 2
@@ -250,7 +327,7 @@ data_get() {
 # data_iter(store, search, callback, [column]) -> $data
 data_iter() {
 	[[ ! "$3" ]] && return 1
-	[[ ! -f "$1" ]] && return 4
+	# [[ ! -f "$1" ]] && return 4
 	local store="$1"
 	local IFS=$'\n'
 	local _r=2
@@ -258,7 +335,11 @@ data_iter() {
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
 		local callback="$1"
-		local assoc="$2"
+		if [[ "${cfg[notORM_always_assoc]}" == true ]]; then
+			local assoc="true"
+		else
+			local assoc="$2"
+		fi
 	else # compat
 		local callback="$3"
 		local search=("$2")
@@ -266,19 +347,19 @@ data_iter() {
 		local assoc=false
 	fi
 
-	while read -r line; do
-		IFS=$delim
+	while read -d$'\x1e' -r row; do
+		IFS=$'\x1f'
 		
 		# LOAD BEARING; see data_get
-		local x="${line//$newline/$'\n'}"
+		local x="${row//$newline/$'\n'}"
 		data=($x)
 		IFS=
 		local i
-		for (( i=0; i<${#search[@]}; i++ )); do
-			if [[ "${data[column[i]]}" != "${search[i]}" && "${search[i]}" ]]; then
-				continue 2
-			fi
-		done
+		# for (( i=0; i<${#search[@]}; i++ )); do
+		# 	if [[ "${data[column[i]]}" != "${search[i]}" && "${search[i]}" ]]; then
+		# 		continue 2
+		# 	fi
+		# done
 		if [[ "$assoc" == true ]]; then # populate the names!
 			declare -A adata
 			for i in ${!data[@]}; do
@@ -290,7 +371,7 @@ data_iter() {
 		"$callback" # only reached if an entry matched all constraints
 		[[ $? == 255 ]] && return 255
 		_r=0
-	done < "$store"
+	done < <(_data_sqlite_select "$store")
 
 	return $_r
 }
@@ -372,25 +453,14 @@ data_yeet() {
 
 	if [[ "$2" == '{' ]]; then
 		_data_parse_pairs
-				
-		local expr
-		_data_gen_expr
-		expr="s${ctrl}^${expr}.*${ctrl}${ctrl}"
+		
 	else # compat
-		local search="$2"
-		local column="${3:-0}"
+		local search=("$2")
+		local column=("${3:-0}")
 		local IFS=' '
-		if [[ $column == 0 ]]; then
-			local expr="s${ctrl}^$(_sed_sanitize "$2")${delim}.*${ctrl}${ctrl}"
-		else
-			local expr="s${ctrl}^$(repeat $column "[^${delim}]*${delim}")$(_sed_sanitize "$2")$delim$(repeat $(( $(cat "${store}.cols") - column - 1 )) "[^${delim}]*${delim}")"'$'"${ctrl}${ctrl}"
-		fi
 	fi
-	
-	sed -i "$expr;/^$/d" "$store"
-	# we could use /$expr/d directly, but in case we find ANOTHER
-	# sed escaping bug that can be chained to RCE, I prefer to
-	# stay safe on this one.
+
+	_data_sqlite_delete	"$store"
 }
 
 # Creates a mapping between column number and a column name.
