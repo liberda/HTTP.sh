@@ -50,7 +50,7 @@ migrate_check() {
                 exit 1
             fi
 
-			a=("$fn" "$EPOCHSECONDS")
+			a=("$migration_name" "$EPOCHSECONDS")
 			data_add storage/migrations.dat a || return $?
 		else
 			log_dbg "[migrations] $migration_name ran at ${res[1]}"
