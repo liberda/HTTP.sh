@@ -8,7 +8,10 @@ function render() {
 	local _tpl_ctrl=$'\02'
 	local tplfile
 
-	_template_find_absolute_path "$2" || exit 1
+	_template_find_absolute_path "$2" || {
+		echo "[template] could not find template absolute path. most likely a bad config, aborting connection!" >&2
+		exit 1
+	}
 
 	if [[ -n "${r[status]}" && "$1" != /dev/stdin && "$1" != "/dev/fd/"* ]]; then
 		get_mime "$tplfile"

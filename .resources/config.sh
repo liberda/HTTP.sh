@@ -12,5 +12,5 @@ fi
 ## overrides the default include path for templates
 ## searches paths in order until it finds a file
 # template_relative_paths=(
-# 	"${cfg[namespace]}/template/"
+# 	"${cfg[namespace]}/templates/"
 # )
