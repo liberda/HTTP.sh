@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 trap ctrl_c INT
+trap ctrl_c TERM
 ctrl_c() {
-	[[ $socket != '' ]] && rm $socket
 	pkill -P $$
 	echo -e "Cleaned up, exitting.\nHave an awesome day!!"
 }
@@ -153,10 +153,10 @@ Afterwards, use this to ACK the message:
 fi
 
 cat <<EOF >&2
-     __   _________________         __ 
-  -=/ /  / /_  _/_  _/  _  \ ___   / / 
+     __   _________________         __
+  -=/ /  / /_  _/_  _/  _  \ ___   / /
  -=/ /__/ / / /  / / / /_/ // __\ / /_
--=/ /--/ / / /  / / / ____/ \__ \/ /-,\ 
+-=/ /--/ / / /  / / / ____/ \__ \/ /-,\
 </_/  /_/ /_/  /_/ /_/   . /___//_/ /_/
                                  v$HTTPSH_VERSION
 EOF
@@ -198,8 +198,9 @@ fi
 
 echo "[HTTP] listening on ${cfg[ip]}:${cfg[port]}"
 if [[ ${cfg[dbg]} == true ]]; then
-	socat -T 300 $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'"
+	socat -T 300 $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c \'src/server.sh ${cfg[debuggier]}\'" &
 else
-	socat -T 300 $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null
-	[[ $? != 0 ]] && echo "[WARN] socat quit with a non-zero status; Maybe the port is in use?"
+	socat -T 300 $socat_listen:${cfg[port]},bind=${cfg[ip]},fork "exec:bash -c src/server.sh" 2>> /dev/null &
 fi
+
+wait
