@@ -41,13 +41,13 @@ if [[ "$1" == "init" ]]; then # will get replaced with proper parameter parsing 
 	fi
 	source config/master.sh
 	
-	mkdir -p "${cfg[namespace]}/${cfg[root]}" "${cfg[namespace]}/workers/example" "${cfg[namespace]}/views" "${cfg[namespace]}/templates" "${cfg[namespace]}/util/" "${cfg[namespace]}/migrations"
-	touch "${cfg[namespace]}/config.sh" "${cfg[namespace]}/workers/example/control"
-	cp ".resources/config.sh" "${cfg[namespace]}/config.sh"
-	cp ".resources/routes.sh" "${cfg[namespace]}/routes.sh"
+	mkdir -p "$namespace/${cfg[root]}" "$namespace/workers/example" "$namespace/views" "namespace/templates" "$namespace/util/" "$namespace/migrations"
+	touch "$namespace/config.sh" "$namespace/workers/example/control"
+	cp ".resources/config.sh" "$namespace/config.sh"
+	cp ".resources/routes.sh" "$namespace/routes.sh"
 
-	cp .resources/example_worker/* "${cfg[namespace]}/workers/example/"
-	cp .resources/example_webroot/* "${cfg[namespace]}/${cfg[root]}/index.shs"
+	cp .resources/example_worker/* "$namespace/workers/example/"
+	cp .resources/example_webroot/* "$namespace/${cfg[root]}/index.shs"
 	
 	echo -e "Success..?\nTry running \`./http.sh\` now"
 	exit 0
