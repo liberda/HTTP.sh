@@ -18,6 +18,7 @@ $4"
 function mailsend() {
 	tmp="$(mktemp)"
 	sender_name="$sender_name" mailgen "${cfg[mail]}" "$1" "$2" "$3" > "$tmp"
+	unix2dos "$tmp" # Haraka is a whiny baby
 
     if [[ "$mailer_testing_out" ]]; then
         cp "$tmp" "$mailer_testing_out"
