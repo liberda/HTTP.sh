@@ -78,9 +78,9 @@ r[content_length]="${headers["content-length"]//[^0-9]}"
 r[user_agent]="${headers["user-agent"]}"
 r[websocket_key]="${headers["sec-websocket-key"]}"
 r[req_headers]="$headers"
+r[url_clean]="${r[url]%\?*}"
 r[url]="$(url_decode "${r[url]}")" # doing this here for.. reasons
 r[uri]="$(realpath "${cfg[namespace]}/${cfg[root]}/")"
-r[url_clean]="${r[url]%\?*}"
 pwd="${r[uri]}" # dead code
 
 if [[ -n "${headers["content-type"]}" ]]; then
